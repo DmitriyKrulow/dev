@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj": {}
+    "C:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj": {}
   },
   "projects": {
-    "c:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj": {
+    "C:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj",
+        "projectUniqueName": "C:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj",
         "projectName": "uchet",
-        "projectPath": "c:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj",
+        "projectPath": "C:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\uchet.csproj",
         "packagesPath": "C:\\Users\\kdw\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\obj\\",
+        "outputPath": "C:\\Users\\kdw\\Desktop\\proekt\\dev\\uchet\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -49,6 +49,22 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.0, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[10.0.0, )"
+            },
+            "QRCoder": {
+              "target": "Package",
+              "version": "[1.7.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

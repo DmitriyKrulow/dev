@@ -1,0 +1,104 @@
+@model IEnumerable<uchet.Models.Property>
+
+@{
+    ViewData["Title"] = "Учет имущества";
+}
+
+<h2>Учет имущества</h2>
+
+<p>
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <a asp-action="Create" class="btn btn-primary">Добавить имущество</a>
+        <a asp-action="Import" class="btn btn-success">Импорт из Excel</a>
+    }
+</p>
+
+<form asp-action="Index" method="get" class="mb-3">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="propertyTypeId">Тип имущества:</label>
+            <select name="propertyTypeId" asp-items="ViewBag.PropertyTypes" class="form-control">
+                <option value="">Все типы</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="locationId">Размещение:</label>
+            <select name="locationId" asp-items="ViewBag.Locations" class="form-control">
+                <option value="">Все размещения</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="userId">Пользователь:</label>
+            <select name="userId" asp-items="ViewBag.Users" class="form-control">
+                <option value="">Все пользователи</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>&nbsp;</label>
+            <div>
+                <input type="submit" value="Фильтровать" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Сбросить</a>
+                <button type="button" class="btn btn-info" onclick="printTable()">Печать</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped" id="propertyTable">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Размещение</th>
+            <th>Назначено</th>
+            <th>QR код</th>
+            <th>Штрих-код</th>
+            <th>Инвентарный номер</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.PropertyType?.Name</td>
+                <td>@item.Location?.Name</td>
+                <td>@item.AssignedUser?.Name</td>
+                <td>@item.QRCode</td>
+                <td>@item.Barcode</td>
+                <td>@item.InventoryNumber</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Редактировать</a>
+                    }
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Удалить</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    function printTable() {
+        var printWindow = window.open('', '_blank');
+        var table = document.getElementById('propertyTable');
+        var printContent = '<html><head><title>Учет имущества</title>';
+        printContent += '<style>table { border-collapse: collapse; width: 100%; }';
+        printContent += 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }';
+        printContent += 'th { background-color: #f2f2f2; }</style></head><body>';
+        printContent += '<h2>Учет имущества</h2>';
+        printContent += table.outerHTML;
+        printContent += '</body></html>';
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+</script>

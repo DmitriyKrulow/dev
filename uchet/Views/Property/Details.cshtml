@@ -1,0 +1,92 @@
+@model uchet.Models.Property
+
+@{
+    ViewData["Title"] = "Детали имущества";
+}
+
+<h2>Детали имущества</h2>
+
+<div>
+    <h4>Имущество</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Название</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+        
+        <dt class="col-sm-2">Описание</dt>
+        <dd class="col-sm-10">@Model.Description</dd>
+        
+        <dt class="col-sm-2">Тип</dt>
+        <dd class="col-sm-10">@Model.PropertyType?.Name</dd>
+        
+        <dt class="col-sm-2">Размещение</dt>
+        <dd class="col-sm-10">@Model.Location?.Name</dd>
+        
+        <dt class="col-sm-2">Назначено</dt>
+        <dd class="col-sm-10">@Model.AssignedUser?.Name</dd>
+        
+        <dt class="col-sm-2">QR код</dt>
+        <dd class="col-sm-10">@Model.QRCode</dd>
+        
+        <dt class="col-sm-2">Штрих-код</dt>
+        <dd class="col-sm-10">@Model.Barcode</dd>
+        
+        <dt class="col-sm-2">Инвентарный номер</dt>
+        <dd class="col-sm-10">@Model.InventoryNumber</dd>
+    </dl>
+</div>
+
+<h4>Файлы</h4>
+@if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+{
+    <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="propertyId" value="@Model.Id" />
+        <div class="form-group">
+            <label for="file">Выберите файл:</label>
+            <input type="file" name="file" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label for="fileType">Тип файла:</label>
+            <select name="fileType" class="form-control">
+                <option value="photo">Фотография</option>
+                <option value="receipt">Накладная</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="submit" value="Загрузить" class="btn btn-primary" />
+        </div>
+    </form>
+}
+
+@if (Model.PropertyFiles != null && Model.PropertyFiles.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Тип файла</th>
+                <th>Файл</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var file in Model.PropertyFiles)
+            {
+                <tr>
+                    <td>@file.FileType</td>
+                    <td><a href="@file.FilePath" target="_blank">Просмотреть файл</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Нет загруженных файлов.</p>
+}
+
+<div>
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактировать</a>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div>

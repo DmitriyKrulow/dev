@@ -1,0 +1,35 @@
+@model uchet.Models.Property
+
+@{
+    ViewData["Title"] = "Удалить имущество";
+}
+
+<h2>Удалить имущество</h2>
+
+<h3>Вы уверены, что хотите удалить это имущество?</h3>
+<div>
+    <h4>Имущество</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Название</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+        
+        <dt class="col-sm-2">Описание</dt>
+        <dd class="col-sm-10">@Model.Description</dd>
+        
+        <dt class="col-sm-2">Тип</dt>
+        <dd class="col-sm-10">@Model.PropertyType?.Name</dd>
+        
+        <dt class="col-sm-2">Размещение</dt>
+        <dd class="col-sm-10">@Model.Location?.Name</dd>
+        
+        <dt class="col-sm-2">Назначено</dt>
+        <dd class="col-sm-10">@Model.AssignedUser?.Name</dd>
+    </dl>
+    
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Удалить" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>

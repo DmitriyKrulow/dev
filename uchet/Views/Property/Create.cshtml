@@ -1,0 +1,58 @@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model uchet.Models.Property
+
+@{
+    ViewData["Title"] = "Добавить имущество";
+}
+
+<h2>Добавить имущество</h2>
+
+<form asp-action="Create" method="post" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <label asp-for="Name" class="control-label">Название</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="Description" class="control-label">Описание</label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="InventoryNumber" class="control-label">Инвентарный номер</label>
+        <input asp-for="InventoryNumber" class="form-control" />
+        <span asp-validation-for="InventoryNumber" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="PropertyTypeId" class="control-label">Тип имущества</label>
+        <select asp-for="PropertyTypeId" asp-items="ViewBag.PropertyTypes" class="form-control">
+            <option value="">Выберите тип</option>
+        </select>
+        <span asp-validation-for="PropertyTypeId" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="LocationId" class="control-label">Размещение</label>
+        <select asp-for="LocationId" asp-items="ViewBag.Locations" class="form-control">
+            <option value="">Выберите размещение</option>
+        </select>
+        <span asp-validation-for="LocationId" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="AssignedUserId" class="control-label">Назначить пользователю</label>
+        <select asp-for="AssignedUserId" asp-items="ViewBag.Users" class="form-control">
+            <option value="">Не назначено</option>
+        </select>
+        <span asp-validation-for="AssignedUserId" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <input type="submit" value="Создать" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>

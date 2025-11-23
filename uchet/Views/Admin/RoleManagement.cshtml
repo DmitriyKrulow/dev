@@ -1,0 +1,196 @@
+@model IEnumerable<uchet.Models.Role>
+@{
+    ViewData["Title"] = "Управление ролями";
+}
+
+<h2>Управление ролями</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Список ролей</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название роли</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var role in Model)
+                {
+                    <tr>
+                        <td>@role.Name</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editRolePermissionsModal" data-role-id="@role.Id" data-role-name="@role.Name">
+                                Управление доступом
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Модальное окно для управления разрешениями роли -->
+<div class="modal fade" id="editRolePermissionsModal" tabindex="-1" role="dialog" aria-labelledby="editRolePermissionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="rolePermissionsForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRolePermissionsModalLabel">Управление доступом для роли: <span id="roleNameDisplay"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="roleIdInput" name="roleId" />
+                    <div id="permissionsContainer">
+                        <!-- Здесь будут динамически загружаться разрешения -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Обработчик открытия модального окна
+            $('#editRolePermissionsModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var roleId = button.data('role-id');
+                var roleName = button.data('role-name');
+                var modal = $(this);
+                
+                // Устанавливаем значения в модальном окне
+                modal.find('#roleIdInput').val(roleId);
+                modal.find('#roleNameDisplay').text(roleName);
+                
+                // Загружаем разрешения для роли
+                loadRolePermissions(roleId);
+            });
+            
+            // Функция загрузки разрешений роли
+            function loadRolePermissions(roleId) {
+                // Очищаем контейнер
+                var permissionsContainer = $('#permissionsContainer');
+                permissionsContainer.empty();
+                
+                // Показываем индикатор загрузки
+                permissionsContainer.html('<p>Загрузка разрешений...</p>');
+                
+                // Отправляем AJAX-запрос к серверу для получения разрешений роли
+                $.ajax({
+                    url: '@Url.Action("GetRolePermissions", "Admin")',
+                    type: 'GET',
+                    data: { roleId: roleId },
+                    success: function(data) {
+                        // Очищаем контейнер
+                        permissionsContainer.empty();
+                        
+                        // Проверяем, есть ли ошибка в ответе
+                        if (data.error) {
+                            permissionsContainer.html('<p class="text-danger">Ошибка: ' + data.error + '</p>');
+                            return;
+                        }
+                        
+                        // Получаем список всех контроллеров и действий
+                        var allControllers = [
+                            { name: 'Home', actions: ['Index', 'Privacy', 'Contact'] },
+                            { name: 'Property', actions: ['Index', 'Details', 'Create'] },
+                            { name: 'Admin', actions: ['Index', 'RoleManagement'] }
+                        ];
+                        
+                        // Создаем чекбоксы для каждого контроллера и действия
+                        allControllers.forEach(function(controller) {
+                            var controllerSection = $('<div>').addClass('mb-3');
+                            controllerSection.append($('<h5>').text('Контроллер: ' + controller.name));
+                            
+                            var actionsContainer = $('<div>').addClass('form-check');
+                            
+                            controller.actions.forEach(function(action) {
+                                var checkboxId = controller.name + '_' + action;
+                                var checkbox = $('<input>').addClass('form-check-input').attr({
+                                    type: 'checkbox',
+                                    id: checkboxId,
+                                    name: 'permissions',
+                                    value: controller.name + ':' + action
+                                });
+                                
+                                // Проверяем, есть ли это разрешение у роли
+                                var hasPermission = data.some(function(permission) {
+                                    return permission.controllerName === controller.name && permission.actionName === action;
+                                });
+                                
+                                if (hasPermission) {
+                                    checkbox.prop('checked', true);
+                                }
+                                
+                                var label = $('<label>').addClass('form-check-label').attr('for', checkboxId).text(action);
+                                
+                                actionsContainer.append(checkbox).append(label).append('<br>');
+                            });
+                            
+                            controllerSection.append(actionsContainer);
+                            permissionsContainer.append(controllerSection);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        permissionsContainer.html('<p class="text-danger">Ошибка загрузки разрешений: ' + error + '</p>');
+                        console.log('Ошибка AJAX:', xhr, status, error);
+                    }
+                });
+            }
+            
+            // Обработчик отправки формы
+            $('#rolePermissionsForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var roleId = $('#roleIdInput').val();
+                var roleName = $('#roleNameDisplay').text();
+                var selectedPermissions = [];
+                
+                // Собираем выбранные разрешения
+                $('input[name="permissions"]:checked').each(function() {
+                    var value = $(this).val();
+                    var parts = value.split(':');
+                    selectedPermissions.push({
+                        controllerName: parts[0],
+                        actionName: parts[1]
+                    });
+                });
+                
+                // Отправляем AJAX-запрос к серверу для сохранения разрешений роли
+                $.ajax({
+                    url: '@Url.Action("SaveRolePermissions", "Admin")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        roleId: roleId,
+                        permissions: selectedPermissions
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            // Показываем сообщение об успешном сохранении
+                            alert('Разрешения для роли "' + roleName + '" успешно сохранены!');
+                            
+                            // Закрываем модальное окно
+                            $('#editRolePermissionsModal').modal('hide');
+                        } else {
+                            alert('Ошибка при сохранении разрешений: ' + (response.error || 'Неизвестная ошибка'));
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Ошибка при сохранении разрешений: ' + error);
+                        console.log('Ошибка AJAX при сохранении:', xhr, status, error);
+                    }
+                });
+            });
+        });
+    </script>
+}
