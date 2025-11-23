@@ -21,6 +21,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 var app = builder.Build();
 
+// Настройка URL для Kestrel
+app.Urls.Add("http://localhost:5250");
+
 // Проверяем и создаем таблицы при необходимости
 using (var scope = app.Services.CreateScope())
 {

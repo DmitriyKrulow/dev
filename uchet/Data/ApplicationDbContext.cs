@@ -16,16 +16,29 @@ namespace uchet.Data
         public DbSet<PropertyType> PropertyTypes { get; set; }
         public DbSet<PropertyFile> PropertyFiles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<Tag> Tags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            
+            // Настройка уникального индекса для InventoryNumber
+            modelBuilder.Entity<Property>()
+                .HasIndex(p => p.InventoryNumber)
+                .IsUnique();
 
             // Настройка связи между User и Role
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleId);
+            
+            // Настройка связи между User и Location
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Location)
+                .WithMany()
+                .HasForeignKey(u => u.LocationId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Настройка связи между Property и Location
             modelBuilder.Entity<Property>()

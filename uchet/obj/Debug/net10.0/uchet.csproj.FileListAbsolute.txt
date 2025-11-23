@@ -210,6 +210,7 @@ C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net10.0\uchet.csproj.Up2Date
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\Microsoft.Win32.SystemEvents.dll
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\QRCoder.dll
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\System.Drawing.Common.dll
-C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
-C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
-C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\System.Private.Windows.Core.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\zxing.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\ZXing.Windows.Compatibility.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\runtimes\win\lib\net9.0\Microsoft.Win32.SystemEvents.dll

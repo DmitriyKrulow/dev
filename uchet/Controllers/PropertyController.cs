@@ -1,3 +1,6 @@
+using System.Drawing;
+using System.Drawing.Imaging;
+using QRCoder;
 using Microsoft.AspNetCore.Mvc;
 using uchet.Data;
 using uchet.Models;
@@ -8,6 +11,8 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
+using ZXing;
+using ZXing.Common;
 
 namespace uchet.Controllers
 {
@@ -114,19 +119,19 @@ namespace uchet.Controllers
             }
             
             // Добавляем отладочную информацию
-            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:117");
-            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:118");
-            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:119");
-            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:120");
+            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:122");
+            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:123");
+            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:124");
+            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:125");
             
             // Проверяем валидацию модели
-            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:123");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:128");
             
             if (ModelState.IsValid)
             {
                 try
                 {
-                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:129");
+                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:134");
                     
                     // Создаем новый экземпляр Property на основе данных из DTO
                     var property = new Property
@@ -137,36 +142,36 @@ namespace uchet.Controllers
                         PropertyTypeId = propertyDto.PropertyTypeId,
                         AssignedUserId = propertyDto.AssignedUserId,
                         InventoryNumber = propertyDto.InventoryNumber,
-                        QRCode = GenerateQRCode(propertyDto.PropertyTypeId), // Генерируем QR код сразу
-                        Barcode = GenerateBarcode(propertyDto.PropertyTypeId) // Генерируем штрих-код сразу
+                        QRCode = GenerateQRCode(propertyDto.InventoryNumber), // Генерируем QR код на основе инвентарного номера
+                        Barcode = GenerateBarcode(propertyDto.InventoryNumber) // Генерируем штрих-код на основе инвентарного номера
                     };
                     
                     // Добавляем имущество в контекст
                     _context.Properties.Add(property);
                     await _context.SaveChangesAsync();
                     
-                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:148");
+                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:153");
                     
-                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:150");
+                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:155");
                     
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
                 {
                     // Логируем ошибку
-                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:157");
+                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:162");
                     ModelState.AddModelError("", "Произошла ошибка при добавлении имущества: " + ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Модель не валидна: - PropertyController.cs:163");
+                Console.WriteLine("Модель не валидна: - PropertyController.cs:168");
                 foreach (var key in ModelState.Keys)
                 {
                     var state = ModelState[key];
                     if (state.Errors.Count > 0)
                     {
-                        Console.WriteLine("Поле - PropertyController.cs:169" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
+                        Console.WriteLine("Поле - PropertyController.cs:174" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
                     }
                 }
             }
@@ -325,18 +330,119 @@ namespace uchet.Controllers
             return _context.Properties.Any(e => e.Id == id);
         }
         
-        private string GenerateQRCode(int propertyId)
+        private string GenerateQRCode(string inventoryNumber)
         {
-            // Здесь будет реализация генерации QR кода
-            // Пока возвращаем заглушку
-            return $"QR_{propertyId}";
+            // Генерация QR кода на основе инвентарного номера
+            return $"QR_{inventoryNumber}";
         }
         
-        private string GenerateBarcode(int propertyId)
+        private string GenerateBarcode(string inventoryNumber)
         {
-            // Здесь будет реализация генерации штрих-кода
-            // Пока возвращаем заглушку
-            return $"BAR_{propertyId}";
+            // Генерация штрих-кода на основе инвентарного номера
+            // Используем только допустимые символы для штрих-кода (цифры)
+            var cleanInventoryNumber = new string(inventoryNumber.Where(char.IsDigit).ToArray());
+            return cleanInventoryNumber;
+        }
+        
+        public IActionResult GenerateQRCodeImage(int id)
+        {
+            // Получаем имущество по ID
+            var property = _context.Properties.FirstOrDefault(p => p.Id == id);
+            if (property == null)
+            {
+                return NotFound();
+            }
+            
+            // Генерация изображения QR кода на основе инвентарного номера
+            using (var qrGenerator = new QRCodeGenerator())
+            using (var qrCodeData = qrGenerator.CreateQrCode(property.InventoryNumber, QRCodeGenerator.ECCLevel.Q))
+            using (var qrCode = new QRCode(qrCodeData))
+            using (var bitmap = qrCode.GetGraphic(20))
+            {
+                using (var stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, ImageFormat.Png);
+                    return File(stream.ToArray(), "image/png");
+                }
+            }
+        }
+        
+        public IActionResult GenerateBarcodeImage(int id)
+        {
+            // Получаем имущество по ID
+            var property = _context.Properties.FirstOrDefault(p => p.Id == id);
+            if (property == null)
+            {
+                Console.WriteLine($"Property with id {id} not found - PropertyController.cs:376");
+                return NotFound();
+            }
+            
+            // Проверяем, есть ли инвентарный номер
+            if (string.IsNullOrEmpty(property.InventoryNumber))
+            {
+                Console.WriteLine($"Inventory number is null or empty for property id {id} - PropertyController.cs:383");
+                // Возвращаем пустое изображение или изображение-заглушку
+                using (var bitmap = new Bitmap(300, 100))
+                using (var graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.Clear(Color.White);
+                    using (var font = new Font("Arial", 12))
+                    {
+                        graphics.DrawString("No Barcode", font, Brushes.Black, new PointF(10, 10));
+                    }
+                    
+                    using (var stream = new MemoryStream())
+                    {
+                        bitmap.Save(stream, ImageFormat.Png);
+                        return File(stream.ToArray(), "image/png");
+                    }
+                }
+            }
+            
+            // Генерация изображения штрих-кода на основе инвентарного номера
+            // Используем Code 128 для генерации штрих-кода
+            try
+            {
+                var writer = new ZXing.Windows.Compatibility.BarcodeWriter()
+                {
+                    Format = ZXing.BarcodeFormat.CODE_128,
+                    Options = new EncodingOptions
+                    {
+                        Width = 300,
+                        Height = 100,
+                        Margin = 10
+                    }
+                };
+                
+                var bitmap = writer.Write(property.InventoryNumber);
+                
+                using (var stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, ImageFormat.Png);
+                    Console.WriteLine($"Successfully generated barcode for property id {id} with inventory number {property.InventoryNumber} - PropertyController.cs:422");
+                    return File(stream.ToArray(), "image/png");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating barcode for property id {id}: {ex.Message} - PropertyController.cs:428");
+                // Возвращаем изображение с ошибкой
+                using (var bitmap = new Bitmap(300, 100))
+                using (var graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.Clear(Color.White);
+                    using (var font = new Font("Arial", 12))
+                    {
+                        graphics.DrawString("Barcode Error", font, Brushes.Black, new PointF(10, 10));
+                    }
+                    
+                    using (var stream = new MemoryStream())
+                    {
+                        bitmap.Save(stream, ImageFormat.Png);
+                        return File(stream.ToArray(), "image/png");
+                    }
+                }
+            }
         }
         
         [Authorize(Roles = "Admin,Manager")]
@@ -359,6 +465,92 @@ namespace uchet.Controllers
             // Пока возвращаем заглушку
             TempData["Message"] = "Импорт из Excel будет реализован позже";
             return RedirectToAction("Index");
+        }
+        
+        public async Task<IActionResult> PrintQRCodes(int? propertyTypeId, int? locationId, int? userId, int? tagId)
+        {
+            var properties = _context.Properties
+                .Include(p => p.PropertyType)
+                .Include(p => p.Location)
+                .Include(p => p.AssignedUser)
+                .AsQueryable();
+
+            if (propertyTypeId.HasValue)
+            {
+                properties = properties.Where(p => p.PropertyTypeId == propertyTypeId.Value);
+            }
+
+            if (locationId.HasValue)
+            {
+                properties = properties.Where(p => p.LocationId == locationId.Value);
+            }
+
+            if (userId.HasValue)
+            {
+                properties = properties.Where(p => p.AssignedUserId == userId.Value);
+            }
+
+            var propertyList = await properties.ToListAsync();
+            
+            // Получаем список активных бирок для выбора
+            ViewBag.Tags = _context.Tags.Where(t => t.IsActive).ToList();
+            ViewBag.SelectedTagId = tagId;
+            
+            // Если выбрана бирка, устанавливаем её размеры
+            if (tagId.HasValue)
+            {
+                var selectedTag = _context.Tags.FirstOrDefault(t => t.Id == tagId.Value);
+                if (selectedTag != null)
+                {
+                    ViewBag.TagWidth = selectedTag.Width + "mm";
+                    ViewBag.TagHeight = selectedTag.Height + "mm";
+                }
+            }
+            
+            return View(propertyList);
+        }
+        
+        public async Task<IActionResult> PrintBarcodes(int? propertyTypeId, int? locationId, int? userId, int? tagId)
+        {
+            var properties = _context.Properties
+                .Include(p => p.PropertyType)
+                .Include(p => p.Location)
+                .Include(p => p.AssignedUser)
+                .AsQueryable();
+
+            // Если выбрана бирка, устанавливаем её размеры
+            if (tagId.HasValue)
+            {
+                var selectedTag = _context.Tags.FirstOrDefault(t => t.Id == tagId.Value);
+                if (selectedTag != null)
+                {
+                    ViewBag.TagWidth = selectedTag.Width + "mm";
+                    ViewBag.TagHeight = selectedTag.Height + "mm";
+                }
+            }
+
+            if (propertyTypeId.HasValue)
+            {
+                properties = properties.Where(p => p.PropertyTypeId == propertyTypeId.Value);
+            }
+
+            if (locationId.HasValue)
+            {
+                properties = properties.Where(p => p.LocationId == locationId.Value);
+            }
+
+            if (userId.HasValue)
+            {
+                properties = properties.Where(p => p.AssignedUserId == userId.Value);
+            }
+
+            var propertyList = await properties.ToListAsync();
+            
+            // Получаем список активных бирок для выбора
+            ViewBag.Tags = _context.Tags.Where(t => t.IsActive).ToList();
+            ViewBag.SelectedTagId = tagId;
+            
+            return View(propertyList);
         }
     }
 }

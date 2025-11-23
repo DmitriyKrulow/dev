@@ -24,6 +24,10 @@ namespace uchet.Models
         
         public bool IsActive { get; set; } = true; // Добавляем поле для блокировки пользователя
         
+        public int? LocationId { get; set; } // Добавляем привязку к локации
+        
         public Role Role { get; set; }
+        
+        public Location Location { get; set; }
     }
 }

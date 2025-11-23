@@ -1,0 +1,145 @@
+@model IEnumerable<uchet.Models.Property>
+
+@{
+    ViewData["Title"] = "Печать штрих-кодов";
+    Layout = null;
+    
+    // Получаем размеры бирки из ViewBag или используем значения по умолчанию
+    var tagWidth = ViewBag.TagWidth ?? "70mm";
+    var tagHeight = ViewBag.TagHeight ?? "30mm";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .label {
+            width: @tagWidth;
+            height: @tagHeight;
+            border: 1px solid #ccc;
+            padding: 5mm;
+            margin: 2mm;
+            display: inline-block;
+            vertical-align: top;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+        }
+
+        .label-content {
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .label-title {
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .label-description {
+            font-size: 8px;
+            margin-bottom: 2mm;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .label-inventory {
+            font-size: 8px;
+            margin-bottom: 2mm;
+        }
+
+        .label-barcode {
+            text-align: center;
+        }
+
+        .label-barcode img {
+            max-width: calc(@tagWidth - 10mm);
+            max-height: calc(@tagHeight / 2);
+        }
+
+        @@media print {
+            .label {
+                page-break-inside: avoid;
+                border: none;
+            }
+        }
+        
+        /* Форма выбора бирки */
+        .tag-selection {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .tag-selection select {
+            margin-right: 10px;
+            padding: 5px;
+        }
+        
+        .tag-selection button {
+            padding: 5px 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Форма выбора бирки -->
+        <div class="tag-selection">
+            <form method="get" action="@Url.Action("PrintBarcodes", "Property")">
+                <label for="tagId">Выберите бирку:</label>
+                <select name="tagId" id="tagId">
+                    <option value="">Стандартная бирка</option>
+                    @foreach (var tag in ViewBag.Tags as List<uchet.Models.Tag> ?? new List<uchet.Models.Tag>())
+                    {
+                        <option value="@tag.Id" selected="@(ViewBag.SelectedTagId?.ToString() == tag.Id.ToString())">
+                            @tag.Name (@tag.Width x @tag.Height мм)
+                        </option>
+                    }
+                </select>
+                <button type="submit">Применить</button>
+            </form>
+        </div>
+        
+        @foreach (var item in Model)
+        {
+            <div class="label">
+                <div class="label-content">
+                    <div class="label-title">@item.Name</div>
+                    <div class="label-description">@item.Description</div>
+                    <div class="label-inventory">Инв. №: @item.InventoryNumber</div>
+                    <div class="label-barcode">
+                        @if (!string.IsNullOrEmpty(item.Barcode))
+                        {
+                            <img src="@Url.Action("GenerateBarcodeImage", new { id = item.Id })" alt="Barcode" />
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</body>
+</html>

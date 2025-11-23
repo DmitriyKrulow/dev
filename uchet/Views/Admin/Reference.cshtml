@@ -1,0 +1,235 @@
+@{
+    ViewData["Title"] = "Справочники";
+}
+
+<h2>Справочники</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Локации</h3>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+            Добавить локацию
+        </button>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var location in ViewBag.Locations)
+                {
+                    <tr>
+                        <td>@location.Name</td>
+                        <td>@location.Description</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLocationModal"
+                                    data-location-id="@location.Id" data-location-name="@location.Name" data-location-description="@location.Description">
+                                Редактировать
+                            </button>
+                            <form asp-action="DeleteLocation" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@location.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту локацию?')">
+                                    Удалить
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="col-md-6">
+        <h3>Типы имущества</h3>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPropertyTypeModal">
+            Добавить тип имущества
+        </button>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var propertyType in ViewBag.PropertyTypes)
+                {
+                    <tr>
+                        <td>@propertyType.Name</td>
+                        <td>@propertyType.Description</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPropertyTypeModal"
+                                    data-type-id="@propertyType.Id" data-type-name="@propertyType.Name" data-type-description="@propertyType.Description">
+                                Редактировать
+                            </button>
+                            <form asp-action="DeletePropertyType" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@propertyType.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этот тип имущества?')">
+                                    Удалить
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="col-md-6">
+        <h3>Бирки</h3>
+        <a href="@Url.Action("Index", "Tag")" class="btn btn-primary mb-3">Управление бирками</a>
+        <p>Настройка размеров и параметров бирок для печати.</p>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления локации -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" role="dialog" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form asp-action="AddLocation" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addLocationModalLabel">Добавить локацию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="addLocationName">Название:</label>
+                        <input type="text" class="form-control" id="addLocationName" name="name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="addLocationDescription">Описание:</label>
+                        <textarea class="form-control" id="addLocationDescription" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования локации -->
+<div class="modal fade" id="editLocationModal" tabindex="-1" role="dialog" aria-labelledby="editLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form asp-action="EditLocation" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLocationModalLabel">Редактировать локацию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editLocationId" name="id" />
+                    <div class="form-group">
+                        <label for="editLocationName">Название:</label>
+                        <input type="text" class="form-control" id="editLocationName" name="name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editLocationDescription">Описание:</label>
+                        <textarea class="form-control" id="editLocationDescription" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления типа имущества -->
+<div class="modal fade" id="addPropertyTypeModal" tabindex="-1" role="dialog" aria-labelledby="addPropertyTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form asp-action="AddPropertyType" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPropertyTypeModalLabel">Добавить тип имущества</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="addPropertyTypeName">Название:</label>
+                        <input type="text" class="form-control" id="addPropertyTypeName" name="name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="addPropertyTypeDescription">Описание:</label>
+                        <textarea class="form-control" id="addPropertyTypeDescription" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования типа имущества -->
+<div class="modal fade" id="editPropertyTypeModal" tabindex="-1" role="dialog" aria-labelledby="editPropertyTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form asp-action="EditPropertyType" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPropertyTypeModalLabel">Редактировать тип имущества</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editPropertyTypeId" name="id" />
+                    <div class="form-group">
+                        <label for="editPropertyTypeName">Название:</label>
+                        <input type="text" class="form-control" id="editPropertyTypeName" name="name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editPropertyTypeDescription">Описание:</label>
+                        <textarea class="form-control" id="editPropertyTypeDescription" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Скрипт для передачи данных в модальное окно редактирования локации
+        $(document).ready(function() {
+            $('#editLocationModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var locationId = button.data('location-id');
+                var locationName = button.data('location-name');
+                var locationDescription = button.data('location-description');
+                var modal = $(this);
+                modal.find('#editLocationId').val(locationId);
+                modal.find('#editLocationName').val(locationName);
+                modal.find('#editLocationDescription').val(locationDescription);
+            });
+            
+            // Скрипт для передачи данных в модальное окно редактирования типа имущества
+            $('#editPropertyTypeModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var typeId = button.data('type-id');
+                var typeName = button.data('type-name');
+                var typeDescription = button.data('type-description');
+                var modal = $(this);
+                modal.find('#editPropertyTypeId').val(typeId);
+                modal.find('#editPropertyTypeName').val(typeName);
+                modal.find('#editPropertyTypeDescription').val(typeDescription);
+            });
+        });
+    </script>
+}

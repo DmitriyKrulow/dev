@@ -4,6 +4,7 @@ using uchet.Models;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace uchet.Controllers
 {
@@ -19,14 +20,16 @@ namespace uchet.Controllers
 
         public IActionResult Index()
         {
-            var users = _context.Users.ToList();
+            var users = _context.Users.Include(u => u.Location).ToList();
             var roles = _context.Roles.ToList();
+            var locations = _context.Locations.ToList();
             ViewBag.Roles = roles;
+            ViewBag.Locations = locations;
             return View(users);
         }
 
         [HttpPost]
-        public IActionResult AddUser(string name, string email, int roleId, string password = null)
+        public IActionResult AddUser(string name, string email, int roleId, int? locationId, string password = null)
         {
             // Если пароль не указан, генерируем случайный пароль
             if (string.IsNullOrEmpty(password))
@@ -39,6 +42,7 @@ namespace uchet.Controllers
                 Name = name,
                 Email = email,
                 RoleId = roleId,
+                LocationId = locationId,
                 Password = password
             };
 
@@ -62,13 +66,14 @@ namespace uchet.Controllers
         }
 
         [HttpPost]
-        public IActionResult EditUser(int userId, string name, string email)
+        public IActionResult EditUser(int userId, string name, string email, int? locationId)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (user != null)
             {
                 user.Name = name;
                 user.Email = email;
+                user.LocationId = locationId;
                 _context.SaveChanges();
             }
 
@@ -130,6 +135,100 @@ namespace uchet.Controllers
             return View(roles);
         }
         
+        // Методы для управления справочниками
+        public IActionResult Reference()
+        {
+            var locations = _context.Locations.ToList();
+            var propertyTypes = _context.PropertyTypes.ToList();
+            ViewBag.Locations = locations;
+            ViewBag.PropertyTypes = propertyTypes;
+            return View();
+        }
+        
+        [HttpPost]
+        public IActionResult AddLocation(string name, string description)
+        {
+            var location = new Location
+            {
+                Name = name,
+                Description = description
+            };
+            
+            _context.Locations.Add(location);
+            _context.SaveChanges();
+            
+            return RedirectToAction("Reference");
+        }
+        
+        [HttpPost]
+        public IActionResult EditLocation(int id, string name, string description)
+        {
+            var location = _context.Locations.FirstOrDefault(l => l.Id == id);
+            if (location != null)
+            {
+                location.Name = name;
+                location.Description = description;
+                _context.SaveChanges();
+            }
+            
+            return RedirectToAction("Reference");
+        }
+        
+        [HttpPost]
+        public IActionResult DeleteLocation(int id)
+        {
+            var location = _context.Locations.FirstOrDefault(l => l.Id == id);
+            if (location != null)
+            {
+                _context.Locations.Remove(location);
+                _context.SaveChanges();
+            }
+            
+            return RedirectToAction("Reference");
+        }
+        
+        [HttpPost]
+        public IActionResult AddPropertyType(string name, string description)
+        {
+            var propertyType = new PropertyType
+            {
+                Name = name,
+                Description = description
+            };
+            
+            _context.PropertyTypes.Add(propertyType);
+            _context.SaveChanges();
+            
+            return RedirectToAction("Reference");
+        }
+        
+        [HttpPost]
+        public IActionResult EditPropertyType(int id, string name, string description)
+        {
+            var propertyType = _context.PropertyTypes.FirstOrDefault(pt => pt.Id == id);
+            if (propertyType != null)
+            {
+                propertyType.Name = name;
+                propertyType.Description = description;
+                _context.SaveChanges();
+            }
+            
+            return RedirectToAction("Reference");
+        }
+        
+        [HttpPost]
+        public IActionResult DeletePropertyType(int id)
+        {
+            var propertyType = _context.PropertyTypes.FirstOrDefault(pt => pt.Id == id);
+            if (propertyType != null)
+            {
+                _context.PropertyTypes.Remove(propertyType);
+                _context.SaveChanges();
+            }
+            
+            return RedirectToAction("Reference");
+        }
+        
         // Метод для получения разрешений роли
         [HttpGet]
         public IActionResult GetRolePermissions(int roleId)
@@ -146,7 +245,7 @@ namespace uchet.Controllers
             catch (Exception ex)
             {
                 // Логируем ошибку (в реальном приложении используйте логгер)
-                Console.WriteLine($"Ошибка при получении разрешений роли {roleId}: {ex.Message} - AdminController.cs:149");
+                Console.WriteLine($"Ошибка при получении разрешений роли {roleId}: {ex.Message} - AdminController.cs:248");
                 return Json(new { error = "Ошибка при получении разрешений" });
             }
         }
@@ -180,7 +279,7 @@ namespace uchet.Controllers
             catch (Exception ex)
             {
                 // Логируем ошибку (в реальном приложении используйте логгер)
-                Console.WriteLine($"Ошибка при сохранении разрешений роли {roleId}: {ex.Message} - AdminController.cs:183");
+                Console.WriteLine($"Ошибка при сохранении разрешений роли {roleId}: {ex.Message} - AdminController.cs:282");
                 return Json(new { success = false, error = "Ошибка при сохранении разрешений" });
             }
         }

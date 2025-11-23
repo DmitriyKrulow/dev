@@ -25,6 +25,16 @@
         </select>
     </div>
     <div class="form-group">
+        <label for="locationId">Локация:</label>
+        <select class="form-control" id="locationId" name="locationId">
+            <option value="">Без локации</option>
+            @foreach (var location in ViewBag.Locations)
+            {
+                <option value="@location.Id">@location.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
         <label for="password">Пароль (оставьте пустым для автогенерации):</label>
         <input type="text" class="form-control" id="password" name="password" />
     </div>
@@ -124,6 +134,16 @@
                     <div class="form-group">
                         <label for="editUserEmail">Email:</label>
                         <input type="email" class="form-control" id="editUserEmail" name="email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserLocationId">Локация:</label>
+                        <select class="form-control" id="editUserLocationId" name="locationId">
+                            <option value="">Без локации</option>
+                            @foreach (var location in ViewBag.Locations)
+                            {
+                                <option value="@location.Id">@location.Name</option>
+                            }
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">

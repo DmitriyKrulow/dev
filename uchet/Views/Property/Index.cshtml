@@ -40,6 +40,17 @@
                 <input type="submit" value="Фильтровать" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-secondary">Сбросить</a>
                 <button type="button" class="btn btn-info" onclick="printTable()">Печать</button>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        Печать кодов
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="@Url.Action("PrintQRCodes", new { propertyTypeId = Context.Request.Query["propertyTypeId"], locationId = Context.Request.Query["locationId"], userId = Context.Request.Query["userId"] })" target="_blank">Печать QR кодов</a></li>
+                        <li><a class="dropdown-item" href="@Url.Action("PrintBarcodes", new { propertyTypeId = Context.Request.Query["propertyTypeId"], locationId = Context.Request.Query["locationId"], userId = Context.Request.Query["userId"] })" target="_blank">Печать штрих-кодов</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="printQRCodes()">Печать QR кодов</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="printBarcodes()">Печать штрих-кодов</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -66,8 +77,18 @@
                 <td>@item.PropertyType?.Name</td>
                 <td>@item.Location?.Name</td>
                 <td>@item.AssignedUser?.Name</td>
-                <td>@item.QRCode</td>
-                <td>@item.Barcode</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.QRCode))
+                    {
+                        <img src="@Url.Action("GenerateQRCodeImage", new { id = item.Id })" alt="QR Code" style="max-width: 100px; max-height: 100px;" />
+                    }
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.Barcode))
+                    {
+                        <img src="@Url.Action("GenerateBarcodeImage", new { id = item.Id })" alt="Barcode" style="max-width: 100px; max-height: 100px;" />
+                    }
+                </td>
                 <td>@item.InventoryNumber</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
@@ -94,9 +115,97 @@
         printContent += 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }';
         printContent += 'th { background-color: #f2f2f2; }</style></head><body>';
         printContent += '<h2>Учет имущества</h2>';
-        printContent += table.outerHTML;
+        
+        // Создаем копию таблицы без столбца "Действия"
+        var tableClone = table.cloneNode(true);
+        var rows = tableClone.rows;
+        for (var i = 0; i < rows.length; i++) {
+            var cells = rows[i].cells;
+            if (i === 0) {
+                // Удаляем заголовок "Действия"
+                for (var j = 0; j < cells.length; j++) {
+                    if (cells[j].innerHTML === 'Действия') {
+                        rows[i].deleteCell(j);
+                        break;
+                    }
+                }
+            } else {
+                // Удаляем ячейку с действиями для каждой строки
+                rows[i].deleteCell(cells.length - 1);
+            }
+        }
+        
+        printContent += tableClone.outerHTML;
         printContent += '</body></html>';
         
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+    
+    function printQRCodes() {
+        var printWindow = window.open('', '_blank');
+        var table = document.getElementById('propertyTable');
+        var printContent = '<html><head><title>QR коды имущества</title>';
+        printContent += '<style>table { border-collapse: collapse; width: 100%; }';
+        printContent += 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }';
+        printContent += 'th { background-color: #f2f2f2; }</style></head><body>';
+        printContent += '<h2>QR коды имущества</h2>';
+         
+        // Создаем таблицу только с названием, QR кодом и инвентарным номером
+        var printTable = document.createElement('table');
+        printTable.className = 'table table-striped';
+        var headerRow = printTable.insertRow();
+        headerRow.insertCell().innerHTML = '<b>Название</b>';
+        headerRow.insertCell().innerHTML = '<b>QR код</b>';
+        headerRow.insertCell().innerHTML = '<b>Инвентарный номер</b>';
+         
+        var rows = table.rows;
+        for (var i = 1; i < rows.length; i++) {
+            var row = printTable.insertRow();
+            var cells = rows[i].cells;
+            row.insertCell().innerHTML = cells[0].innerHTML; // Название
+            row.insertCell().innerHTML = cells[4].innerHTML; // QR код
+            row.insertCell().innerHTML = cells[6].innerHTML; // Инвентарный номер
+        }
+         
+        printContent += printTable.outerHTML;
+        printContent += '</body></html>';
+         
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+     
+    function printBarcodes() {
+        var printWindow = window.open('', '_blank');
+        var table = document.getElementById('propertyTable');
+        var printContent = '<html><head><title>Штрих-коды имущества</title>';
+        printContent += '<style>table { border-collapse: collapse; width: 100%; }';
+        printContent += 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }';
+        printContent += 'th { background-color: #f2f2f2; }</style></head><body>';
+        printContent += '<h2>Штрих-коды имущества</h2>';
+         
+        // Создаем таблицу только с названием, штрих-кодом и инвентарным номером
+        var printTable = document.createElement('table');
+        printTable.className = 'table table-striped';
+        var headerRow = printTable.insertRow();
+        headerRow.insertCell().innerHTML = '<b>Название</b>';
+        headerRow.insertCell().innerHTML = '<b>Штрих-код</b>';
+        headerRow.insertCell().innerHTML = '<b>Инвентарный номер</b>';
+         
+        var rows = table.rows;
+        for (var i = 1; i < rows.length; i++) {
+            var row = printTable.insertRow();
+            var cells = rows[i].cells;
+            row.insertCell().innerHTML = cells[0].innerHTML; // Название
+            row.insertCell().innerHTML = cells[5].innerHTML; // Штрих-код
+            row.insertCell().innerHTML = cells[6].innerHTML; // Инвентарный номер
+        }
+         
+        printContent += printTable.outerHTML;
+        printContent += '</body></html>';
+         
         printWindow.document.write(printContent);
         printWindow.document.close();
         printWindow.print();
