@@ -85,13 +85,13 @@ namespace uchet.Controllers
             ViewBag.Locations = new SelectList(locations, "Id", "Name");
             ViewBag.Users = new SelectList(users, "Id", "Name");
             
-            return View();
+            return View(new CreatePropertyDto());
         }
 
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Property property)
+        public async Task<IActionResult> Create(CreatePropertyDto propertyDto)
         {
             // Загружаем связанные данные для проверки валидации
             var propertyTypes = await _context.PropertyTypes.ToListAsync();
@@ -103,21 +103,21 @@ namespace uchet.Controllers
             ViewBag.Users = new SelectList(users, "Id", "Name");
             
             // Проверяем, что выбраны обязательные поля
-            if (property.PropertyTypeId == 0)
+            if (propertyDto.PropertyTypeId == 0)
             {
                 ModelState.AddModelError("PropertyTypeId", "Пожалуйста, выберите тип имущества");
             }
             
-            if (property.LocationId == 0)
+            if (propertyDto.LocationId == 0)
             {
                 ModelState.AddModelError("LocationId", "Пожалуйста, выберите размещение");
             }
             
             // Добавляем отладочную информацию
-            Console.WriteLine($"Попытка создания имущества: {property.Name} - PropertyController.cs:117");
-            Console.WriteLine($"PropertyTypeId: {property.PropertyTypeId} - PropertyController.cs:118");
-            Console.WriteLine($"LocationId: {property.LocationId} - PropertyController.cs:119");
-            Console.WriteLine($"InventoryNumber: {property.InventoryNumber} - PropertyController.cs:120");
+            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:117");
+            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:118");
+            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:119");
+            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:120");
             
             // Проверяем валидацию модели
             Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:123");
@@ -128,50 +128,62 @@ namespace uchet.Controllers
                 {
                     Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:129");
                     
+                    // Создаем новый экземпляр Property на основе данных из DTO
+                    var property = new Property
+                    {
+                        Name = propertyDto.Name,
+                        Description = propertyDto.Description,
+                        LocationId = propertyDto.LocationId,
+                        PropertyTypeId = propertyDto.PropertyTypeId,
+                        AssignedUserId = propertyDto.AssignedUserId,
+                        InventoryNumber = propertyDto.InventoryNumber,
+                        QRCode = GenerateQRCode(propertyDto.PropertyTypeId), // Генерируем QR код сразу
+                        Barcode = GenerateBarcode(propertyDto.PropertyTypeId) // Генерируем штрих-код сразу
+                    };
+                    
                     // Добавляем имущество в контекст
                     _context.Properties.Add(property);
                     await _context.SaveChangesAsync();
                     
-                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:135");
+                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:148");
                     
-                    // Генерация QR кода
-                    property.QRCode = GenerateQRCode(property.Id);
-                    
-                    // Генерация штрих-кода
-                    property.Barcode = GenerateBarcode(property.Id);
-                    
-                    Console.WriteLine($"Сгенерированы QR: {property.QRCode}, Barcode: {property.Barcode} - PropertyController.cs:143");
-                    
-                    // Обновляем имущество с QR кодом и штрих-кодом
-                    _context.Update(property);
-                    await _context.SaveChangesAsync();
-                    
-                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:149");
+                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:150");
                     
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
                 {
                     // Логируем ошибку
-                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:156");
+                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:157");
                     ModelState.AddModelError("", "Произошла ошибка при добавлении имущества: " + ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Модель не валидна: - PropertyController.cs:162");
+                Console.WriteLine("Модель не валидна: - PropertyController.cs:163");
                 foreach (var key in ModelState.Keys)
                 {
                     var state = ModelState[key];
                     if (state.Errors.Count > 0)
                     {
-                        Console.WriteLine("Поле - PropertyController.cs:168" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
+                        Console.WriteLine("Поле - PropertyController.cs:169" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
                     }
                 }
             }
             
             // Если валидация не пройдена или произошла ошибка, возвращаем представление с данными
-            return View(property);
+            // Создаем новый экземпляр CreatePropertyDto для отображения в форме
+            var propertyDtoForView = new CreatePropertyDto
+            {
+                Name = propertyDto.Name,
+                Description = propertyDto.Description,
+                LocationId = propertyDto.LocationId,
+                PropertyTypeId = propertyDto.PropertyTypeId,
+                AssignedUserId = propertyDto.AssignedUserId,
+                InventoryNumber = propertyDto.InventoryNumber
+            };
+            
+            return View(propertyDtoForView);
         }
         
         [Authorize(Roles = "Admin,Manager")]
