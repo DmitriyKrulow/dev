@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using ZXing;
 using ZXing.Common;
+using ClosedXML.Excel;
 
 namespace uchet.Controllers
 {
@@ -59,7 +60,13 @@ namespace uchet.Controllers
             ViewBag.Locations = new SelectList(locations, "Id", "Name", locationId);
             ViewBag.Users = new SelectList(users, "Id", "Name", userId);
 
-            return View(await properties.ToListAsync());
+            var propertyList = await properties.ToListAsync();
+            Console.WriteLine($"Количество имущества: {propertyList.Count} - PropertyController.cs:64");
+            foreach (var prop in propertyList)
+            {
+                Console.WriteLine($"Имущество: {prop.Name}, Срок использования: {prop.UsagePeriod} - PropertyController.cs:67");
+            }
+            return View(propertyList);
         }
 
         public async Task<IActionResult> Details(int id)
@@ -76,6 +83,7 @@ namespace uchet.Controllers
                 return NotFound();
             }
             
+            Console.WriteLine($"Детали имущества: {property.Name}, Срок использования: {property.UsagePeriod} - PropertyController.cs:86");
             return View(property);
         }
 
@@ -119,19 +127,19 @@ namespace uchet.Controllers
             }
             
             // Добавляем отладочную информацию
-            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:122");
-            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:123");
-            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:124");
-            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:125");
+            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:130");
+            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:131");
+            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:132");
+            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:133");
             
             // Проверяем валидацию модели
-            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:128");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:136");
             
             if (ModelState.IsValid)
             {
                 try
                 {
-                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:134");
+                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:142");
                     
                     // Создаем новый экземпляр Property на основе данных из DTO
                     var property = new Property
@@ -142,6 +150,11 @@ namespace uchet.Controllers
                         PropertyTypeId = propertyDto.PropertyTypeId,
                         AssignedUserId = propertyDto.AssignedUserId,
                         InventoryNumber = propertyDto.InventoryNumber,
+                        BalanceDate = propertyDto.BalanceDate,
+                        UsagePeriod = propertyDto.UsagePeriod,
+                        Cost = propertyDto.Cost,
+                        LastMaintenanceDate = propertyDto.LastMaintenanceDate,
+                        ExpiryDate = propertyDto.ExpiryDate,
                         QRCode = GenerateQRCode(propertyDto.InventoryNumber), // Генерируем QR код на основе инвентарного номера
                         Barcode = GenerateBarcode(propertyDto.InventoryNumber) // Генерируем штрих-код на основе инвентарного номера
                     };
@@ -150,28 +163,28 @@ namespace uchet.Controllers
                     _context.Properties.Add(property);
                     await _context.SaveChangesAsync();
                     
-                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:153");
+                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:166");
                     
-                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:155");
+                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:168");
                     
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
                 {
                     // Логируем ошибку
-                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:162");
+                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:175");
                     ModelState.AddModelError("", "Произошла ошибка при добавлении имущества: " + ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Модель не валидна: - PropertyController.cs:168");
+                Console.WriteLine("Модель не валидна: - PropertyController.cs:181");
                 foreach (var key in ModelState.Keys)
                 {
                     var state = ModelState[key];
                     if (state.Errors.Count > 0)
                     {
-                        Console.WriteLine("Поле - PropertyController.cs:174" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
+                        Console.WriteLine("Поле - PropertyController.cs:187" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
                     }
                 }
             }
@@ -185,7 +198,12 @@ namespace uchet.Controllers
                 LocationId = propertyDto.LocationId,
                 PropertyTypeId = propertyDto.PropertyTypeId,
                 AssignedUserId = propertyDto.AssignedUserId,
-                InventoryNumber = propertyDto.InventoryNumber
+                InventoryNumber = propertyDto.InventoryNumber,
+                BalanceDate = propertyDto.BalanceDate,
+                UsagePeriod = propertyDto.UsagePeriod,
+                Cost = propertyDto.Cost,
+                LastMaintenanceDate = propertyDto.LastMaintenanceDate,
+                ExpiryDate = propertyDto.ExpiryDate
             };
             
             return View(propertyDtoForView);
@@ -373,14 +391,14 @@ namespace uchet.Controllers
             var property = _context.Properties.FirstOrDefault(p => p.Id == id);
             if (property == null)
             {
-                Console.WriteLine($"Property with id {id} not found - PropertyController.cs:376");
+                Console.WriteLine($"Property with id {id} not found - PropertyController.cs:394");
                 return NotFound();
             }
             
             // Проверяем, есть ли инвентарный номер
             if (string.IsNullOrEmpty(property.InventoryNumber))
             {
-                Console.WriteLine($"Inventory number is null or empty for property id {id} - PropertyController.cs:383");
+                Console.WriteLine($"Inventory number is null or empty for property id {id} - PropertyController.cs:401");
                 // Возвращаем пустое изображение или изображение-заглушку
                 using (var bitmap = new Bitmap(300, 100))
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -419,13 +437,13 @@ namespace uchet.Controllers
                 using (var stream = new MemoryStream())
                 {
                     bitmap.Save(stream, ImageFormat.Png);
-                    Console.WriteLine($"Successfully generated barcode for property id {id} with inventory number {property.InventoryNumber} - PropertyController.cs:422");
+                    Console.WriteLine($"Successfully generated barcode for property id {id} with inventory number {property.InventoryNumber} - PropertyController.cs:440");
                     return File(stream.ToArray(), "image/png");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error generating barcode for property id {id}: {ex.Message} - PropertyController.cs:428");
+                Console.WriteLine($"Error generating barcode for property id {id}: {ex.Message} - PropertyController.cs:446");
                 // Возвращаем изображение с ошибкой
                 using (var bitmap = new Bitmap(300, 100))
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -451,6 +469,44 @@ namespace uchet.Controllers
             return View();
         }
         
+        [Authorize(Roles = "Admin,Manager")]
+        public IActionResult DownloadImportTemplate()
+        {
+            // Создаем шаблон Excel в памяти
+            using (var workbook = new ClosedXML.Excel.XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Имущество");
+                
+                // Добавляем заголовки
+                worksheet.Cell("A1").Value = "Название";
+                worksheet.Cell("B1").Value = "Описание";
+                worksheet.Cell("C1").Value = "Инвентарный номер";
+                worksheet.Cell("D1").Value = "Тип имущества";
+                worksheet.Cell("E1").Value = "Размещение";
+                worksheet.Cell("F1").Value = "Назначенный пользователь";
+                worksheet.Cell("G1").Value = "Дата баланса";
+                worksheet.Cell("H1").Value = "Срок использования (месяцев)";
+                worksheet.Cell("I1").Value = "Стоимость";
+                worksheet.Cell("J1").Value = "Дата последнего обслуживания";
+                worksheet.Cell("K1").Value = "Срок годности";
+                
+                // Устанавливаем ширину колонок
+                worksheet.Columns().AdjustToContents();
+                
+                // Сохраняем в поток
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    
+                    return File(
+                        content,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "Шаблон_импорта_имущества.xlsx");
+                }
+            }
+        }
+        
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> Import(IFormFile file)
@@ -461,9 +517,168 @@ namespace uchet.Controllers
                 return View();
             }
             
-            // Здесь будет реализация импорта из Excel
-            // Пока возвращаем заглушку
-            TempData["Message"] = "Импорт из Excel будет реализован позже";
+            // Проверяем расширение файла
+            var extension = Path.GetExtension(file.FileName).ToLower();
+            if (extension != ".xlsx" && extension != ".xls")
+            {
+                ModelState.AddModelError("", "Пожалуйста, выберите файл Excel (.xlsx или .xls)");
+                return View();
+            }
+            
+            var importedCount = 0;
+            var errors = new List<string>();
+            
+            try
+            {
+                using (var stream = new MemoryStream())
+                {
+                    await file.CopyToAsync(stream);
+                    
+                    using (var workbook = new XLWorkbook(stream))
+                    {
+                        var worksheet = workbook.Worksheet(1);
+                        var rows = worksheet.RowsUsed();
+                        
+                        // Пропускаем заголовок
+                        foreach (var row in rows.Skip(1))
+                        {
+                            try
+                            {
+                                var name = row.Cell(1).Value.ToString();
+                                var description = row.Cell(2).Value.ToString();
+                                var inventoryNumber = row.Cell(3).Value.ToString();
+                                
+                                // Проверяем обязательные поля
+                                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(inventoryNumber))
+                                {
+                                    errors.Add($"Строка {row.RowNumber()}: Название и инвентарный номер обязательны");
+                                    continue;
+                                }
+                                
+                                // Проверяем, существует ли уже имущество с таким инвентарным номером
+                                if (_context.Properties.Any(p => p.InventoryNumber == inventoryNumber))
+                                {
+                                    errors.Add($"Строка {row.RowNumber()}: Имущество с инвентарным номером {inventoryNumber} уже существует");
+                                    continue;
+                                }
+                                
+                                // Получаем тип имущества
+                                var propertyTypeName = row.Cell(4).Value.ToString();
+                                var propertyType = await _context.PropertyTypes.FirstOrDefaultAsync(pt => pt.Name == propertyTypeName);
+                                
+                                // Получаем размещение
+                                var locationName = row.Cell(5).Value.ToString();
+                                var location = await _context.Locations.FirstOrDefaultAsync(l => l.Name == locationName);
+                                
+                                // Получаем назначенного пользователя (если указан)
+                                User assignedUser = null;
+                                var assignedUserName = row.Cell(6).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(assignedUserName))
+                                {
+                                    assignedUser = await _context.Users.FirstOrDefaultAsync(u => u.Name == assignedUserName);
+                                }
+                                
+                                // Получаем дату баланса (если указана)
+                                DateTime? balanceDate = null;
+                                var balanceDateStr = row.Cell(7).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(balanceDateStr) && DateTime.TryParse(balanceDateStr, out var bd))
+                                {
+                                    balanceDate = bd;
+                                }
+                                
+                                // Получаем срок использования (если указан)
+                                int? usagePeriod = null;
+                                var usagePeriodStr = row.Cell(8).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(usagePeriodStr) && int.TryParse(usagePeriodStr, out var up))
+                                {
+                                    usagePeriod = up;
+                                }
+                                
+                                // Получаем стоимость (если указана)
+                                decimal? cost = null;
+                                var costStr = row.Cell(9).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(costStr) && decimal.TryParse(costStr, out var c))
+                                {
+                                    cost = c;
+                                }
+                                
+                                // Получаем дату последнего обслуживания (если указана)
+                                DateTime? lastMaintenanceDate = null;
+                                var lastMaintenanceDateStr = row.Cell(10).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(lastMaintenanceDateStr) && DateTime.TryParse(lastMaintenanceDateStr, out var lmd))
+                                {
+                                    lastMaintenanceDate = lmd;
+                                }
+                                
+                                // Получаем срок годности (если указан)
+                                DateTime? expiryDate = null;
+                                var expiryDateStr = row.Cell(11).Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(expiryDateStr) && DateTime.TryParse(expiryDateStr, out var ed))
+                                {
+                                    expiryDate = ed;
+                                }
+                                
+                                // Создаем новое имущество
+                                var property = new Property
+                                {
+                                    Name = name,
+                                    Description = description,
+                                    InventoryNumber = inventoryNumber,
+                                    PropertyTypeId = propertyType?.Id ?? 0,
+                                    LocationId = location?.Id ?? 0,
+                                    AssignedUserId = assignedUser?.Id,
+                                    BalanceDate = balanceDate,
+                                    UsagePeriod = usagePeriod,
+                                    Cost = cost,
+                                    LastMaintenanceDate = lastMaintenanceDate,
+                                    ExpiryDate = expiryDate,
+                                    QRCode = GenerateQRCode(inventoryNumber),
+                                    Barcode = GenerateBarcode(inventoryNumber)
+                                };
+                                
+                                // Проверяем, что тип имущества и размещение существуют
+                                if (property.PropertyTypeId == 0)
+                                {
+                                    errors.Add($"Строка {row.RowNumber()}: Тип имущества '{propertyTypeName}' не найден");
+                                    continue;
+                                }
+                                
+                                if (property.LocationId == 0)
+                                {
+                                    errors.Add($"Строка {row.RowNumber()}: Размещение '{locationName}' не найдено");
+                                    continue;
+                                }
+                                
+                                _context.Properties.Add(property);
+                                importedCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                errors.Add($"Строка {row.RowNumber()}: Ошибка импорта - {ex.Message}");
+                            }
+                        }
+                    }
+                }
+                
+                // Сохраняем изменения в базе данных
+                await _context.SaveChangesAsync();
+                
+                // Формируем сообщение о результате импорта
+                var message = $"Успешно импортировано {importedCount} записей.";
+                if (errors.Any())
+                {
+                    message += $" Ошибок: {errors.Count}.";
+                    TempData["ImportErrors"] = errors;
+                }
+                
+                TempData["Message"] = message;
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Ошибка при импорте файла: " + ex.Message);
+                return View();
+            }
+            
             return RedirectToAction("Index");
         }
         

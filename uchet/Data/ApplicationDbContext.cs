@@ -104,7 +104,8 @@ namespace uchet.Data
             modelBuilder.Entity<PropertyType>().HasData(
                 new PropertyType { Id = 1, Name = "Электроника", Description = "Электронные устройства" },
                 new PropertyType { Id = 2, Name = "Мебель", Description = "Офисная мебель" },
-                new PropertyType { Id = 3, Name = "Транспорт", Description = "Транспортные средства" }
+                new PropertyType { Id = 3, Name = "Транспорт", Description = "Транспортные средства" },
+                new PropertyType { Id = 4, Name = "Расходники", Description = "Расходные материалы" }
             );
             
             // Добавляем тестовые локации

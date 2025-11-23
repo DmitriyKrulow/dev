@@ -4,6 +4,11 @@
 
 <h2>Импорт имущества из Excel</h2>
 
+<div class="alert alert-info">
+    <p>Для импорта имущества скачайте шаблон Excel и заполните его в соответствии с форматом.</p>
+    <p><a href="@Url.Action("DownloadImportTemplate", "Property")" class="btn btn-success">Скачать шаблон Excel</a></p>
+</div>
+
 @if (TempData["Message"] != null)
 {
     <div class="alert alert-info">

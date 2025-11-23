@@ -21,5 +21,15 @@ namespace uchet.Models
         
         [Required]
         public string InventoryNumber { get; set; }
+        
+        public DateTime? BalanceDate { get; set; }
+        
+        public int? UsagePeriod { get; set; }
+        
+        public decimal? Cost { get; set; }
+        
+        public DateTime? LastMaintenanceDate { get; set; }
+        
+        public DateTime? ExpiryDate { get; set; }
     }
 }

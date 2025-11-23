@@ -66,12 +66,18 @@
             <th>QR код</th>
             <th>Штрих-код</th>
             <th>Инвентарный номер</th>
+            <th>Дата баланса</th>
+            <th>Срок использования</th>
+            <th>Стоимость</th>
+            <th>Последнее обслуживание</th>
+            <th>Срок годности</th>
             <th>Действия</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
+            <!-- Отладка: @item.Name - Срок использования: @item.UsagePeriod -->
             <tr>
                 <td>@item.Name</td>
                 <td>@item.PropertyType?.Name</td>
@@ -90,6 +96,13 @@
                     }
                 </td>
                 <td>@item.InventoryNumber</td>
+                <td>@(item.BalanceDate?.ToString("dd.MM.yyyy") ?? "")</td>
+                <!-- Отладка: Срок использования = @item.UsagePeriod -->
+                <td>@(item.UsagePeriod?.ToString() ?? "") месяцев</td>
+                <!-- Отладка: Стоимость = @item.Cost -->
+                <td>@(item.Cost?.ToString("N2") ?? "")</td>
+                <td>@(item.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "")</td>
+                <td>@(item.ExpiryDate?.ToString("dd.MM.yyyy") ?? "")</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
                     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))

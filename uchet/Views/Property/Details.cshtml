@@ -47,6 +47,23 @@
         
         <dt class="col-sm-2">Инвентарный номер</dt>
         <dd class="col-sm-10">@Model.InventoryNumber</dd>
+        
+        <dt class="col-sm-2">Дата баланса</dt>
+        <dd class="col-sm-10">@(Model.BalanceDate?.ToString("dd.MM.yyyy") ?? "")</dd>
+        
+        <!-- Отладка: Срок использования = @Model.UsagePeriod -->
+        <dt class="col-sm-2">Срок использования</dt>
+        <dd class="col-sm-10">@(Model.UsagePeriod?.ToString() ?? "") месяцев</dd>
+        
+        <!-- Отладка: Стоимость = @Model.Cost -->
+        <dt class="col-sm-2">Стоимость</dt>
+        <dd class="col-sm-10">@(Model.Cost?.ToString("N2") ?? "")</dd>
+        
+        <dt class="col-sm-2">Дата последнего обслуживания</dt>
+        <dd class="col-sm-10">@(Model.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "")</dd>
+        
+        <dt class="col-sm-2">Срок годности</dt>
+        <dd class="col-sm-10">@(Model.ExpiryDate?.ToString("dd.MM.yyyy") ?? "")</dd>
     </dl>
 </div>
 
