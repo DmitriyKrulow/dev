@@ -8,21 +8,44 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace uchet.Controllers
 {
+    /// <summary>
+    /// Контроллер, отвечающий за аутентификацию пользователей: вход, выход и изменение пароля.
+    /// Обеспечивает безопасный доступ к системе с использованием аутентификации на основе куки.
+    /// </summary>
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="AccountController"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных приложения, используемый для доступа к пользователям и ролям.</param>
         public AccountController(ApplicationDbContext context)
         {
             _context = context;
         }
 
+        /// <summary>
+        /// Возвращает представление формы входа в систему.
+        /// Доступен всем пользователям без аутентификации.
+        /// </summary>
+        /// <returns>Представление <c>Login</c>.</returns>
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
+        /// <summary>
+        /// Обрабатывает отправку формы входа. Проверяет электронную почту и пароль пользователя.
+        /// При успешной аутентификации создает cookie-аутентификацию и перенаправляет на главную страницу.
+        /// </summary>
+        /// <param name="email">Электронная почта пользователя.</param>
+        /// <param name="password">Пароль пользователя.</param>
+        /// <returns>
+        /// Перенаправление на главную страницу при успешном входе;
+        /// иначе — возврат представления с сообщением об ошибке.
+        /// </returns>
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
@@ -57,6 +80,11 @@ namespace uchet.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Возвращает представление для изменения пароля.
+        /// Доступ разрешён только аутентифицированным пользователям.
+        /// </summary>
+        /// <returns>Представление <c>ChangePassword</c>.</returns>
         [HttpGet]
         [Authorize]
         public IActionResult ChangePassword()
@@ -64,6 +92,18 @@ namespace uchet.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Обрабатывает запрос на изменение пароля.
+        /// Проверяет старый пароль, соответствие нового пароля и его подтверждения.
+        /// При успешной проверке обновляет пароль в базе данных.
+        /// </summary>
+        /// <param name="oldPassword">Текущий пароль пользователя.</param>
+        /// <param name="newPassword">Новый пароль.</param>
+        /// <param name="confirmNewPassword">Подтверждение нового пароля.</param>
+        /// <returns>
+        /// Текущее представление с сообщением об ошибке при неудаче;
+        /// или с сообщением об успешном изменении при успехе.
+        /// </returns>
         [HttpPost]
         [Authorize]
         public IActionResult ChangePassword(string oldPassword, string newPassword, string confirmNewPassword)
@@ -94,6 +134,11 @@ namespace uchet.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Обрабатывает выход пользователя из системы.
+        /// Удаляет аутентификационные куки и перенаправляет на главную страницу.
+        /// </summary>
+        /// <returns>Перенаправление на действие <c>Index</c> контроллера <c>Home</c>.</returns>
         [HttpPost]
         public async Task<IActionResult> Logout()
         {

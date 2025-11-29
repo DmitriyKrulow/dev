@@ -152,6 +152,66 @@ else
 {
     <p>Нет загруженных файлов.</p>
 }
+<!-- Добавьте эту секцию в детали имущества -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-check"></i> Статус инвентаризации
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Статус проверки:</strong>
+                    </div>
+                    <div class="col-6">
+                        @if (Model.IsCheckedInLastInventory)
+                        {
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Проверено
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times-circle"></i> Не проверено
+                            </span>
+                        }
+                    </div>
+                </div>
+                @if (ViewBag.LastInventoryDate != null)
+                {
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <strong>Последняя проверка:</strong>
+                        </div>
+                        <div class="col-6">
+                            @ViewBag.LastInventoryDate.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <strong>Инвентаризация:</strong>
+                        </div>
+                        <div class="col-6">
+                            @ViewBag.LastInventoryName
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <span class="text-muted">Инвентаризации не проводились</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
 
 <div>
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))

@@ -4,250 +4,634 @@
     ViewData["Title"] = "Сканирование имущества";
 }
 
-<h2>Сканирование имущества</h2>
-
-<div>
-    <h4>Инвентаризация: @Model.Name</h4>
-    <p><strong>Локация:</strong> @Model.Location?.Name</p>
-    
-    <div class="progress mb-3">
-        <div class="progress-bar" role="progressbar" 
-             style="width: @((Model.TotalItems > 0 ? (Model.CheckedItems * 100 / Model.TotalItems) : 0))%"
-             aria-valuenow="@Model.CheckedItems" 
-             aria-valuemin="0" 
-             aria-valuemax="@Model.TotalItems">
-            Прогресс: @Model.CheckedItems / @Model.TotalItems
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5>Сканирование QR кода или штрих-кода</h5>
+<div class="scanning-container">
+    <!-- Заголовок и прогресс -->
+    <div class="scanning-header mb-3">
+        <h2 class="h4 mb-2">Сканирование имущества</h2>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>@Model.Name</strong><br>
+                <small class="text-muted">@Model.Location?.Name</small>
             </div>
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="codeInput">Введите код или используйте сканер:</label>
-                    <input type="text" id="codeInput" class="form-control" placeholder="Введите QR код или инвентарный номер" />
+            <div class="text-end">
+                <div class="progress" style="width: 120px; height: 20px;">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: @((Model.TotalItems > 0 ? (Model.CheckedItems * 100 / Model.TotalItems) : 0))%"
+                         aria-valuenow="@Model.CheckedItems" 
+                         aria-valuemin="0" 
+                         aria-valuemax="@Model.TotalItems">
+                    </div>
                 </div>
-                <button id="checkButton" class="btn btn-primary mt-2">Проверить имущество</button>
-                
-                <!-- Интерфейс сканирования камерой -->
-                <div class="mt-3">
-                    <button id="startCameraButton" class="btn btn-info">Запустить камеру</button>
-                    <button id="stopCameraButton" class="btn btn-secondary" style="display: none;">Остановить камеру</button>
-                </div>
-                <div id="cameraContainer" class="mt-2" style="display: none;">
-                    <video id="video" width="100%" height="300" style="border: 1px solid #ccc;"></video>
-                    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
-                </div>
+                <small>@Model.CheckedItems/@Model.TotalItems</small>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5>Результат проверки</h5>
+
+    <div class="row g-2">
+        <!-- Левая колонка - сканирование -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-camera me-2"></i>Сканирование
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Быстрый ввод кода -->
+                    <div class="mb-3">
+                        <label for="codeInput" class="form-label">QR-код или инвентарный номер:</label>
+                        <div class="input-group">
+                            <input type="text" id="codeInput" class="form-control form-control-lg" 
+                                   placeholder="Введите код или отсканируйте" autocomplete="off" />
+                            <button id="checkButton" class="btn btn-primary">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Управление камерой -->
+                    <div class="camera-controls mb-3">
+                        <button id="startCameraButton" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-camera me-2"></i>Запустить сканер
+                        </button>
+                        <button id="stopCameraButton" class="btn btn-outline-secondary w-100" style="display: none;">
+                            <i class="fas fa-stop me-2"></i>Остановить сканер
+                        </button>
+                    </div>
+
+                    <!-- Видео с камеры -->
+                    <div id="cameraContainer" class="text-center" style="display: none;">
+                        <div class="camera-frame mb-2">
+                            <video id="video" playsinline class="rounded"></video>
+                            <div class="scanner-overlay"></div>
+                        </div>
+                        <p class="text-muted small">Наведите камеру на QR-код</p>
+                    </div>
+
+                    <!-- Быстрые действия -->
+                    <div class="quick-actions mt-3">
+                        <button id="flashlightButton" class="btn btn-outline-info btn-sm" style="display: none;">
+                            <i class="fas fa-lightbulb"></i> Фонарик
+                        </button>
+                        <button id="switchCameraButton" class="btn btn-outline-info btn-sm" style="display: none;">
+                            <i class="fas fa-sync-alt"></i> Камера
+                        </button>
+                        
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <button id="debugButton" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-bug"></i> Отладка
+                            </button>
+                        }
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div id="resultMessage"></div>
+        </div>
+
+        <!-- Правая колонка - результаты и список -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Список имущества
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Сообщения о результатах -->
+                    <div id="resultMessage" class="p-3 border-bottom"></div>
+                    
+                    <!-- Список имущества с виртуальным скроллом -->
+                    <div class="properties-list-container" style="max-height: 400px; overflow-y: auto;">
+                        <div id="propertiesList" class="p-2">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Загрузка...
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Навигация -->
+    <div class="mt-3 d-grid gap-2 d-md-flex justify-content-md-end">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Назад
+        </a>
+    </div>
 </div>
 
+@section Styles {
+    <style>
+        .scanning-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
 
-<div class="mt-3">
-    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Назад к деталям</a>
-</div>
+        .camera-frame {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #video {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .property-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            margin-bottom: 4px;
+        }
+
+        .property-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(2px);
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.1);
+        }
+
+        .property-item.checked {
+            background-color: #d1edff;
+            border-left: 3px solid #0d6efd;
+        }
+
+        .property-item:last-child {
+            border-bottom: none;
+        }
+
+        .property-name {
+            font-size: 0.9rem;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .property-details {
+            font-size: 0.8rem;
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            min-width: 80px;
+        }
+
+        .check-date {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        /* Адаптивность для мобильных */
+        @@media (max-width: 768px) {
+            .scanning-header {
+                text-align: center;
+            }
+            
+            #video {
+                height: 200px;
+            }
+            
+            .scanner-overlay {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .properties-list-container {
+                max-height: 300px !important;
+            }
+            
+            .property-item {
+                padding: 8px 10px;
+            }
+            
+            .property-name {
+                font-size: 0.85rem;
+                -webkit-line-clamp: 1;
+            }
+            
+            .status-badge {
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+            }
+        }
+
+        /* Анимации */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); }
+        }
+
+        /* Скроллбар для списка */
+        .properties-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .properties-list-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .properties-list-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .properties-list-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .inventory-number-hidden {
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+}
 
 @section Scripts {
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Добавляем логирование для диагностики загрузки свойств
-            console.log('Загружаем список имущества...');
-            // Загружаем список имущества при загрузке страницы
-            // loadLocationProperties(); // Убираем дублирующий вызов
+            // Переменные для управления камерой
+            let html5QrCode = null;
+            let isScanning = false;
+            let currentCameraId = null;
+
+            // Инициализация при загрузке
+            initializeScanner();
+
+            // Обработка ручного ввода
+            $('#checkButton').click(processCode);
+            $('#codeInput').keypress(function(e) {
+                if (e.which === 13) {
+                    processCode();
+                }
+            });
+
+            // Управление камерой
+            $('#startCameraButton').click(startCamera);
+            $('#stopCameraButton').click(stopCamera);
+            $('#switchCameraButton').click(switchCamera);
+            $('#flashlightButton').click(toggleFlashlight);
             
-            $('#checkButton').click(function() {
-                var code = $('#codeInput').val();
+            // Обработчик кнопки отладки (если она есть на странице)
+            $('#debugButton').click(debugData);
+
+            // Остановка камеры при закрытии страницы
+            $(window).on('beforeunload', stopCamera);
+            $(window).on('pagehide', stopCamera);
+
+            function initializeScanner() {
+                try {
+                    html5QrCode = new Html5Qrcode("video");
+                    console.log('Сканер инициализирован');
+                } catch (error) {
+                    console.error('Ошибка инициализации сканера:', error);
+                    showMessage('Ошибка инициализации сканера', 'danger');
+                }
+            }
+
+            async function startCamera() {
+                if (isScanning) return;
+
+                try {
+                    $('#cameraContainer').fadeIn(300);
+                    $('#startCameraButton').hide();
+                    $('#stopCameraButton').show();
+                    $('#flashlightButton').show();
+                    $('#switchCameraButton').show();
+
+                    // Получаем доступные камеры
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras && cameras.length > 0) {
+                        // Предпочитаем заднюю камеру
+                        currentCameraId = cameras.find(cam => cam.label.toLowerCase().includes('back'))?.id || cameras[0].id;
+                    }
+
+                    await html5QrCode.start(
+                        currentCameraId || { facingMode: "environment" },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.333334
+                        },
+                        onScanSuccess,
+                        onScanError
+                    );
+
+                    isScanning = true;
+                    $('.scanner-overlay').addClass('pulse');
+                    
+                } catch (error) {
+                    console.error('Ошибка запуска камеры:', error);
+                    showMessage('Не удалось запустить камеру: ' + error.message, 'danger');
+                    stopCamera();
+                }
+            }
+
+            function stopCamera() {
+                if (isScanning && html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        isScanning = false;
+                        $('#cameraContainer').fadeOut(300);
+                        $('#startCameraButton').show();
+                        $('#stopCameraButton').hide();
+                        $('#flashlightButton').hide();
+                        $('#switchCameraButton').hide();
+                        $('.scanner-overlay').removeClass('pulse');
+                    }).catch(error => {
+                        console.error('Ошибка остановки камеры:', error);
+                    });
+                }
+            }
+
+            async function switchCamera() {
+                if (!isScanning) return;
+
+                try {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras.length <= 1) {
+                        showMessage('Доступна только одна камера', 'info');
+                        return;
+                    }
+
+                    stopCamera();
+                    setTimeout(() => {
+                        currentCameraId = null;
+                        startCamera();
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('Ошибка переключения камеры:', error);
+                }
+            }
+
+            function toggleFlashlight() {
+                if ('torch' in MediaTrackCapabilities.prototype) {
+                    const track = video.srcObject.getVideoTracks()[0];
+                    track.applyConstraints({
+                        advanced: [{ torch: !track.getConstraints().torch }]
+                    });
+                } else {
+                    showMessage('Фонарик не поддерживается на этом устройстве', 'info');
+                }
+            }
+
+            function debugData() {
+                console.log('=== ОТЛАДКА ДАННЫХ ===');
+                console.log('Inventory ID:', @Model.Id);
+                console.log('Location ID:', @Model.LocationId);
+                
+                $.get('@Url.Action("GetLocationProperties", "Inventory")', {
+                    inventoryId: @Model.Id
+                }, function(data) {
+                    console.log('Raw API response:', data);
+                    if (data.success && data.properties && data.properties.length > 0) {
+                        console.log('First property details:', data.properties[0]);
+                        console.log('Property names sample:', data.properties.slice(0, 5).map(p => p.name));
+                        console.log('All properties count:', data.properties.length);
+                        
+                        // Проверяем структуру данных
+                        data.properties.slice(0, 3).forEach((prop, idx) => {
+                            console.log(`Property ${idx}:`, {
+                                id: prop.id,
+                                name: prop.name,
+                                propertyTypeName: prop.propertyTypeName,
+                                inventoryNumber: prop.inventoryNumber,
+                                isChecked: prop.isChecked
+                            });
+                        });
+                    }
+                });
+            }
+
+            function onScanSuccess(decodedText) {
+                $('#codeInput').val(decodedText);
+                processCode();
+                
+                $('.scanner-overlay').css('border-color', '#00ff00');
+                setTimeout(() => {
+                    $('.scanner-overlay').css('border-color', '#00ff00');
+                }, 200);
+            }
+
+            function onScanError(error) {
+                if (!error.includes('No QR code found')) {
+                    console.log('Ошибка сканирования:', error);
+                }
+            }
+
+            function processCode() {
+                const code = $('#codeInput').val().trim();
                 if (!code) {
-                    showMessage('Пожалуйста, введите код', 'danger');
+                    showMessage('Введите код для проверки', 'warning');
+                    $('#codeInput').focus();
                     return;
                 }
-                
+
+                $('#checkButton').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
                 $.post('@Url.Action("CheckItem", "Inventory")', {
                     inventoryId: @Model.Id,
                     code: code
                 }, function(data) {
                     if (data.success) {
-                        showMessage(data.message, 'success');
-                        $('#codeInput').val('');
-                        
-                        // Обновляем прогресс
-                        var progressPercent = data.totalItems > 0 ? (data.checkedItems * 100 / data.totalItems) : 0;
-                        $('.progress-bar').css('width', progressPercent + '%');
-                        $('.progress-bar').attr('aria-valuenow', data.checkedItems);
-                        $('.progress-bar').text('Прогресс: ' + data.checkedItems + ' / ' + data.totalItems);
-                        
-                        // Перезагружаем список имущества
+                        showMessage(`<strong>✓ Успешно!</strong><br>${data.message}`, 'success');
+                        $('#codeInput').val('').focus();
+                        updateProgress(data.checkedItems, data.totalItems);
                         loadLocationProperties();
                         
-                        // Если инвентаризация завершена
                         if (data.isCompleted) {
-                            setTimeout(function() {
+                            setTimeout(() => {
                                 window.location.href = '@Url.Action("Details", "Inventory", new { id = Model.Id })';
                             }, 2000);
                         }
                     } else {
-                        showMessage(data.message, 'danger');
+                        showMessage(`<strong>✗ Ошибка:</strong><br>${data.message}`, 'danger');
+                        $('#codeInput').select();
                     }
                 }).fail(function() {
-                    showMessage('Ошибка при проверке имущества', 'danger');
+                    showMessage('<strong>✗ Ошибка сети</strong><br>Проверьте подключение', 'danger');
+                }).always(function() {
+                    $('#checkButton').prop('disabled', false).html('<i class="fas fa-check"></i>');
                 });
-            });
-            
-            // Обработка нажатия Enter в поле ввода
-            $('#codeInput').keypress(function(e) {
-                if (e.which === 13) {
-                    $('#checkButton').click();
-                }
-            });
-            
-            function showMessage(text, type) {
-                var alertClass = 'alert-' + type;
-                var html = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
-                           text +
-                           '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                           '</div>';
-                $('#resultMessage').html(html);
             }
-            
-            // Загрузка списка имущества
+
+            function updateProgress(checked, total) {
+                const percent = total > 0 ? (checked * 100 / total) : 0;
+                $('.progress-bar').css('width', percent + '%')
+                                 .attr('aria-valuenow', checked)
+                                 .text(`${checked}/${total}`);
+            }
+
+            function showMessage(html, type) {
+                const alertClass = `alert-${type}`;
+                const message = `
+                    <div class="alert ${alertClass} alert-dismissible fade show fade-in" role="alert">
+                        ${html}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('#resultMessage').html(message);
+                
+                if (type === 'success') {
+                    setTimeout(() => {
+                        $('.alert').alert('close');
+                    }, 3000);
+                }
+            }
+
             function loadLocationProperties() {
-                // Добавляем логирование для диагностики загрузки свойств
-                console.log('Загружаем список имущества...');
+                console.log('Загрузка свойств для inventoryId:', @Model.Id);
                 
                 $.get('@Url.Action("GetLocationProperties", "Inventory")', {
                     inventoryId: @Model.Id
                 }, function(data) {
-                    // Добавляем логирование для диагностики полученных данных
-                    console.log('Получены данные:', data);
+                    console.log('Полученные данные:', data);
                     
-                    if (data.success) {
-                        // Добавляем логирование для диагностики отображения свойств
-                        console.log('Отображаем свойства:', data.properties);
+                    if (data.success && data.properties) {
+                        console.log('Количество свойств:', data.properties.length);
                         
-                        var html = '<table class="table table-striped">' +
-                                   '<thead><tr>' +
-                                   '<th>Название</th>' +
-                                   '<th>Тип</th>' +
-                                   '<th>Инвентарный номер</th>' +
-                                   '<th>Статус</th>' +
-                                   '<th>Дата проверки</th>' +
-                                   '</tr></thead><tbody>';
-                                   
-                        data.properties.forEach(function(property) {
-                            // Добавляем логирование для диагностики отображения каждого свойства
-                            console.log('Отображаем свойство:', property);
+                        let html = '';
+                        
+                        if (data.properties.length === 0) {
+                            html = '<div class="text-center text-muted py-3">Нет имущества в этой локации</div>';
+                        } else {
+                            data.properties.forEach((property, index) => {
+                                const isChecked = property.isChecked;
+                                const checkDate = property.checkDate ? 
+                                    new Date(property.checkDate).toLocaleDateString('ru-RU') : '';
+                                
+                                // Очищаем название от лишней информации
+                                let displayName = cleanPropertyName(property.name);
+                                
+                                // Получаем тип свойства
+                                const propertyType = property.propertyTypeName || 'Не указан';
+                                
+                                // Инвентарный номер скрываем от показа
+                                const hasInventoryNumber = property.inventoryNumber && property.inventoryNumber !== 'Без номера';
+                                
+                                console.log(`Свойство ${index}:`, {
+                                    оригинальноеНазвание: property.name,
+                                    очищенноеНазвание: displayName,
+                                    тип: propertyType,
+                                    проверено: isChecked
+                                });
+                                
+                                html += `
+                                    <div class="property-item ${isChecked ? 'checked' : ''}" data-property-id="${property.id}" data-inventory-number="${property.inventoryNumber || ''}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="flex-grow-1">
+                                                <strong class="property-name">${displayName}</strong>
+                                                <br>
+                                                <small class="text-muted property-details">
+                                                    ${propertyType}
+                                                    ${hasInventoryNumber ? '• <span class="inventory-number-hidden">Есть номер</span>' : '• Без номера'}
+                                                </small>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge ${isChecked ? 'bg-success' : 'bg-danger'} status-badge">
+                                                    ${isChecked ? '✓ Проверено' : '✗ Не проверено'}
+                                                </span>
+                                                ${checkDate ? `<br><small class="check-date">${checkDate}</small>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
+                        $('#propertiesList').html(html);
+                        
+                        // Обработчик клика по элементу свойства
+                        $('.property-item').click(function() {
+                            const propertyId = $(this).data('property-id');
+                            const propertyName = $(this).find('.property-name').text();
                             
-                            var status = property.IsChecked ?
-                                '<span class="badge bg-success">Проверено</span>' :
-                                '<span class="badge bg-danger">Не проверено</span>';
-                                
-                            var checkDate = property.CheckDate ?
-                                new Date(property.CheckDate).toLocaleDateString('ru-RU') :
-                                '';
-                                
-                            html += '<tr>' +
-                                    '<td>' + (property.Name || 'Не указано') + '</td>' +
-                                    '<td>' + (property.PropertyTypeName || 'Не указан') + '</td>' +
-                                    '<td>' + (property.InventoryNumber || 'Не указан') + '</td>' +
-                                    '<td>' + status + '</td>' +
-                                    '<td>' + checkDate + '</td>' +
-                                    '</tr>';
+                            // Показываем сообщение, что нужно отсканировать QR-код
+                            showMessage(`Для проверки "${propertyName}" отсканируйте QR-код на объекте`, 'info');
+                            
+                            $('#codeInput').focus();
                         });
                         
-                        html += '</tbody></table>';
-                        $('#propertiesList').html(html);
                     } else {
-                        $('#propertiesList').html('<p>Ошибка загрузки имущества: ' + data.message + '</p>');
+                        console.error('Ошибка в данных:', data.message);
+                        $('#propertiesList').html(`<div class="text-center text-danger py-3">Ошибка: ${data.message || 'Неизвестная ошибка'}</div>`);
                     }
-                }).fail(function() {
-                    console.log('Ошибка загрузки имущества');
-                    $('#propertiesList').html('<p>Ошибка загрузки имущества</p>');
+                }).fail(function(xhr, status, error) {
+                    console.error('Ошибка AJAX:', status, error);
+                    $('#propertiesList').html('<div class="text-center text-danger py-3">Ошибка загрузки данных</div>');
                 });
             }
-            
-            // Загружаем список имущества при загрузке страницы
+
+            function cleanPropertyName(name) {
+                if (!name || name === 'undefined' || name === 'null') {
+                    return 'Не указано';
+                }
+                
+                // Если название содержит запятые, разбиваем на части
+                if (name.includes(',')) {
+                    const parts = name.split(',').map(part => part.trim()).filter(part => part !== '');
+                    
+                    // Возвращаем первую часть (основное название)
+                    if (parts.length > 0) {
+                        return parts[0];
+                    }
+                }
+                
+                return name;
+            }
+
+            // Загрузка при старте
             loadLocationProperties();
             
-            // Инициализация сканера QR кодов
-            let html5QrCode = new Html5Qrcode("video");
-            let isScanning = false;
-            
-            $('#startCameraButton').click(function() {
-                if (isScanning) return;
-                
-                $('#cameraContainer').show();
-                $('#startCameraButton').hide();
-                $('#stopCameraButton').show();
-                
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 }
-                    },
-                    qrCodeMessage => {
-                        // Обработка найденного QR кода
-                        $('#codeInput').val(qrCodeMessage);
-                        $('#checkButton').click();
-                        
-                        // Останавливаем сканер после успешного сканирования
-                        stopCamera();
-                    },
-                    errorMessage => {
-                        // Обработка ошибок сканирования
-                    }
-                ).catch(err => {
-                    console.log(`Unable to start scanning, error: ${err}`);
-                    showMessage('Не удалось запустить камеру: ' + err, 'danger');
-                    stopCamera();
-                });
-                
-                isScanning = true;
-            });
-            
-            $('#stopCameraButton').click(function() {
-                stopCamera();
-            });
-            
-            function stopCamera() {
-                if (isScanning) {
-                    html5QrCode.stop().then(ignore => {
-                        isScanning = false;
-                        $('#cameraContainer').hide();
-                        $('#startCameraButton').show();
-                        $('#stopCameraButton').hide();
-                    }).catch(err => {
-                        console.log("Unable to stop camera");
-                    });
-                }
-            }
-            
-            // Остановка камеры при закрытии страницы
-            $(window).on('beforeunload', function() {
-                if (isScanning) {
-                    html5QrCode.stop().catch(err => {
-                        console.log("Unable to stop camera");
-                    });
-                }
-            });
+            // Автофокус на поле ввода
+            $('#codeInput').focus();
         });
     </script>
 }

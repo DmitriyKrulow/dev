@@ -8,17 +8,33 @@ using System.Linq;
 
 namespace uchet.Controllers
 {
+    /// <summary>
+    /// Контроллер, отвечающий за обработку запросов к главной странице и служебным разделам сайта.
+    /// Содержит действия для отображения информационной панели, политики конфиденциальности, контактов,
+    /// а также тестовые методы для проверки состояния базы данных.
+    /// </summary>
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="HomeController"/>.
+        /// </summary>
+        /// <param name="logger">Сервис для логирования событий в контроллере.</param>
+        /// <param name="context">Контекст базы данных приложения.</param>
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
             _context = context;
         }
 
+        /// <summary>
+        /// Возвращает представление главной страницы с данными информационной панели.
+        /// Данные включают общее количество имущества, количество имущества с истёкшим сроком годности,
+        /// имущество, подлежащее списанию, а также статистику расходов по месяцам.
+        /// </summary>
+        /// <returns>Представление <c>Index</c> с моделью <see cref="DashboardViewModel"/>.</returns>
         public IActionResult Index()
         {
             // Создаем модель данных для информационной панели
@@ -44,7 +60,11 @@ namespace uchet.Controllers
             return View(dashboardModel);
         }
         
-        // Метод для получения данных о расходах по месяцам
+        /// <summary>
+        /// Возвращает список расходов по месяцам за последние 12 месяцев.
+        /// Каждая запись содержит название месяца и сумму затрат на приобретение имущества в этом месяце.
+        /// </summary>
+        /// <returns>Список объектов <see cref="MonthlyExpense"/>, представляющих расходы по месяцам.</returns>
         private List<MonthlyExpense> GetMonthlyExpenses()
         {
             var expenses = new List<MonthlyExpense>();
@@ -72,18 +92,30 @@ namespace uchet.Controllers
             return expenses;
         }
 
-        [Authorize]
+        /// <summary>
+        /// Возвращает представление с информацией о политике конфиденциальности.
+        /// </summary>
+        /// <returns>Представление <c>Privacy</c>.</returns>
         public IActionResult Privacy()
         {
             return View();
         }
 
-        [Authorize]
+        /// <summary>
+        /// Возвращает представление с контактной информацией.
+        /// </summary>
+        /// <returns>Представление <c>Contact</c>.</returns>
         public IActionResult Contact()
         {
             return View();
         }
         
+        /// <summary>
+        /// Тестовый метод для проверки доступности и содержимого таблицы <c>Inventories</c> и <c>InventoryItems</c>.
+        /// Возвращает текстовое содержимое с количеством записей и образцами данных.
+        /// Используется для диагностики подключения к базе данных.
+        /// </summary>
+        /// <returns>Текстовый ответ с информацией о данных в таблицах инвентаризаций.</returns>
         [HttpGet]
         public async Task<IActionResult> TestDatabase()
         {
@@ -111,6 +143,12 @@ namespace uchet.Controllers
             return Content(result, "text/plain");
         }
         
+        /// <summary>
+        /// Тестовый метод для проверки доступности и содержимого таблицы <c>Properties</c>.
+        /// Возвращает общее количество имущества и количество в определённом месте (LocationId = 1),
+        /// а также образцы записей.
+        /// </summary>
+        /// <returns>Текстовый ответ с информацией о данных в таблице имущества.</returns>
         [HttpGet]
         public async Task<IActionResult> TestProperties()
         {
@@ -131,6 +169,11 @@ namespace uchet.Controllers
             return Content(result, "text/plain");
         }
 
+        /// <summary>
+        /// Возвращает страницу с ошибкой приложения.
+        /// Отключает кэширование ответа, чтобы предотвратить сохранение информации об ошибках.
+        /// </summary>
+        /// <returns>Представление <c>Error</c> с моделью <see cref="ErrorViewModel"/>.</returns>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
