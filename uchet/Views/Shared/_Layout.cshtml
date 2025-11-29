@@ -3,9 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - uchet</title>
+    <title>@ViewData["Title"] - Учет имущества</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/uchet.styles.css" asp-append-version="true" />
 </head>
@@ -13,7 +14,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">uchet</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Учет имущества</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -21,33 +22,47 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house me-1"></i>Домашняя
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">
+                                <i class="bi bi-info-circle me-1"></i>О программе
+                            </a>
                         </li>
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Property" asp-action="Index">Учет имущества</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Property" asp-action="Index">
+                                    <i class="bi bi-database me-1"></i>Учет имущества
+                                </a>
                             </li>
-                        @if (User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Manager")))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Inventory" asp-action="Index">Инвентаризация</a>
-                            </li>
-                        }
+                            @if (User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Manager")))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Inventory" asp-action="Index">
+                                        <i class="bi bi-clipboard-check me-1"></i>Инвентаризация
+                                    </a>
+                                </li>
+                            }
                         }
                         @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Управление пользователями</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">
+                                    <i class="bi bi-person-gear me-1"></i>Управление пользователями
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="RoleManagement">Управление ролями</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="RoleManagement">
+                                    <i class="bi bi-shield-lock me-1"></i>Управление ролями
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Reference">Справочники</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Reference">
+                                    <i class="bi bi-book me-1"></i>Справочники
+                                </a>
                             </li>
                         }
                     </ul>
@@ -55,21 +70,27 @@
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="ChangePassword">Сменить пароль</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="ChangePassword">
+                                    <i class="bi bi-key me-1"></i>Сменить пароль
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <span class="navbar-text">Привет, @User.Identity.Name!</span>
+                                <span class="nav-link text-dark"> @User.Identity.Name</span>
                             </li>
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="form-inline">
-                                    <button type="submit" class="btn btn-link nav-link text-dark">Выйти</button>
+                                    <button type="submit" class="btn btn-link nav-link text-secondary">
+                                        <i class="bi bi-box-arrow-right me-1"></i>Выйти
+                                    </button>
                                 </form>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Войти</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+                                </a>
                             </li>
                         }
                     </ul>
@@ -85,7 +106,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - uchet - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2025 - kdw - <a asp-area="" asp-controller="Home" asp-action="Privacy">О программе</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

@@ -222,3 +222,7 @@ C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\ExcelNumberFormat.dll
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\RBush.dll
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\SixLabors.Fonts.dll
 C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\System.IO.Packaging.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\BootstrapIcons.Wpf.dll
+C:\Users\kdw\Desktop\proekt\dev\uchet\bin\Debug\net10.0\libman.json
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net10.0\compressed\njthu8ll9e-{0}-ho0d1k5s6r-ho0d1k5s6r.gz
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net10.0\compressed\9sbero5dfw-{0}-26f9b7qkas-26f9b7qkas.gz

@@ -94,7 +94,7 @@ namespace uchet.Data
             );
 
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, Name = "Administrator", Email = "admin@example.com", Password = "admin", RoleId = 1 }
+                new User { Id = 1, Name = "Administrator", Email = "dkrugg@mail.ru", Password = "admin", RoleId = 1 }
             );
             
             // Добавляем тестовые разрешения для ролей
@@ -131,8 +131,8 @@ namespace uchet.Data
             
             // Добавляем тестовые локации
             modelBuilder.Entity<Location>().HasData(
-                new Location { Id = 1, Name = "Офис 101", Description = "Главный офис" },
-                new Location { Id = 2, Name = "Склад A", Description = "Основной склад" },
+                new Location { Id = 1, Name = "Кабинет 101", Description = "Скалад расходников" },
+                new Location { Id = 2, Name = "Склад", Description = "Основной склад на цокольном этаже" },
                 new Location { Id = 3, Name = "Конференц-зал", Description = "Зал для встреч" }
             );
         }

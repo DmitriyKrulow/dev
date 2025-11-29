@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v10.0": {
       "uchet/1.0.0": {
         "dependencies": {
+          "BootstrapIcons.Wpf": "1.13.0",
           "ClosedXML": "0.105.0",
           "DocumentFormat.OpenXml": "3.3.0",
           "Microsoft.EntityFrameworkCore.Tools": "10.0.0",
@@ -17,6 +18,14 @@
         },
         "runtime": {
           "uchet.dll": {}
+        }
+      },
+      "BootstrapIcons.Wpf/1.13.0": {
+        "runtime": {
+          "lib/net45/BootstrapIcons.Wpf.dll": {
+            "assemblyVersion": "1.13.0.0",
+            "fileVersion": "1.13.0.0"
+          }
         }
       },
       "ClosedXML/0.105.0": {
@@ -872,6 +881,13 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "BootstrapIcons.Wpf/1.13.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wq4Lb96EoS0fSNtFGPlZUpKslgiLOIznLGzSTeSatEM5VDXAYFBX/3kd0CEcbUxmywa/dv38W0KuSqi/pkMtvg==",
+      "path": "bootstrapicons.wpf/1.13.0",
+      "hashPath": "bootstrapicons.wpf.1.13.0.nupkg.sha512"
     },
     "ClosedXML/0.105.0": {
       "type": "package",
