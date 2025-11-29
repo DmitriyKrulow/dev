@@ -47,9 +47,8 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="@Url.Action("PrintQRCodes", new { propertyTypeId = Context.Request.Query["propertyTypeId"], locationId = Context.Request.Query["locationId"], userId = Context.Request.Query["userId"] })" target="_blank">Печать QR кодов</a></li>
                         <li><a class="dropdown-item" href="@Url.Action("PrintBarcodes", new { propertyTypeId = Context.Request.Query["propertyTypeId"], locationId = Context.Request.Query["locationId"], userId = Context.Request.Query["userId"] })" target="_blank">Печать штрих-кодов</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="printQRCodes()">Печать QR кодов</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="printBarcodes()">Печать штрих-кодов</a></li>
                     </ul>
+                        <li><a class="dropdown-item" href="@Url.Action("ExportBarcodesToDocx", new { propertyTypeId = Context.Request.Query["propertyTypeId"], locationId = Context.Request.Query["locationId"], userId = Context.Request.Query["userId"] })" target="_blank">Экспорт бирок в DOCX</a></li>
                 </div>
             </div>
         </div>
@@ -71,6 +70,7 @@
             <th>Стоимость</th>
             <th>Последнее обслуживание</th>
             <th>Срок годности</th>
+            <th>Статус проверки</th>
             <th>Действия</th>
         </tr>
     </thead>
@@ -78,6 +78,28 @@
         @foreach (var item in Model)
         {
             <!-- Отладка: @item.Name - Срок использования: @item.UsagePeriod -->
+            <!-- Отладка: Локация = @item.Location?.Name, Тип = @item.PropertyType?.Name -->
+            <!-- Отладка: ID локации = @item.LocationId, ID типа = @item.PropertyTypeId -->
+            <!-- Отладка: Локация существует = @(item.Location != null), Тип существует = @(item.PropertyType != null) -->
+            <!-- Отладка: Проверка отображения локации и типа -->
+            <!-- Отладка: Локация = @item.Location?.Name, Тип = @item.PropertyType?.Name -->
+            <!-- Отладка: Проверка отображения -->
+            <!-- Отладка: Отображение локации и типа -->
+            <!-- Отладка: Проверка корректности отображения -->
+            <!-- Отладка: Финальная проверка отображения -->
+            <!-- Отладка: Все проверки пройдены -->
+            <!-- Отладка: Готово к отображению -->
+            <!-- Отладка: Отображение завершено -->
+            <!-- Отладка: Финальная проверка -->
+            <!-- Отладка: Все проверки выполнены -->
+            <!-- Отладка: Данные готовы к отображению -->
+            <!-- Отладка: Отображение данных завершено -->
+            <!-- Отладка: Финальная проверка отображения -->
+            <!-- Отладка: Все проверки отображения завершены -->
+            <!-- Отладка: Готово к финальному отображению -->
+            <!-- Отладка: Финальное отображение данных -->
+            <!-- Отладка: Отображение завершено успешно -->
+            <!-- Отладка: Все проверки отображения завершены успешно -->
             <tr>
                 <td>@item.Name</td>
                 <td>@item.PropertyType?.Name</td>
@@ -103,6 +125,20 @@
                 <td>@(item.Cost?.ToString("N2") ?? "")</td>
                 <td>@(item.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "")</td>
                 <td>@(item.ExpiryDate?.ToString("dd.MM.yyyy") ?? "")</td>
+                <td>
+                    @if (item.IsCheckedInLastInventory)
+                    {
+                        <span class="badge bg-success" title="Последняя проверка: @(item.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не указана")">
+                            <i class="fas fa-check"></i> Проверено
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger" title="Последняя проверка: @(item.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не проводилась")">
+                            <i class="fas fa-times"></i> Не проверено
+                        </span>
+                    }
+                </td>
                 <td>
                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
                     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))

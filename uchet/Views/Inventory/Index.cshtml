@@ -1,0 +1,65 @@
+@model IEnumerable<uchet.Models.Inventory>
+
+@{
+    ViewData["Title"] = "Инвентаризации";
+}
+
+<h2>Инвентаризации</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Создать новую инвентаризацию</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Локация</th>
+            <th>Дата начала</th>
+            <th>Статус</th>
+            <th>Прогресс</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Location?.Name</td>
+                <td>@item.StartDate.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>
+                    @if (item.IsCompleted)
+                    {
+                        <span class="badge bg-success">Завершена</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">В процессе</span>
+                    }
+                </td>
+                <td>
+                    @if (item.TotalItems > 0)
+                    {
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: @((item.CheckedItems * 100 / item.TotalItems))%" 
+                                 aria-valuenow="@item.CheckedItems" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="@item.TotalItems">
+                                @item.CheckedItems / @item.TotalItems
+                            </div>
+                        </div>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Детали</a>
+                    @if (!item.IsCompleted)
+                    {
+                        <a asp-action="Scan" asp-route-id="@item.Id" class="btn btn-success btn-sm">Сканировать</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

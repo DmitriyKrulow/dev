@@ -14,23 +14,31 @@ using System;
 using ZXing;
 using ZXing.Common;
 using ClosedXML.Excel;
+using uchet.Services;
+using System.Runtime.Versioning;
 
 namespace uchet.Controllers
 {
     [Authorize]
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     public class PropertyController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly BarcodeDocxService _barcodeDocxService;
         private readonly IWebHostEnvironment _environment;
-
-        public PropertyController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public PropertyController(ApplicationDbContext context, IWebHostEnvironment environment, BarcodeDocxService barcodeDocxService)
         {
             _context = context;
             _environment = environment;
+            _barcodeDocxService = barcodeDocxService;
         }
 
         public async Task<IActionResult> Index(int? propertyTypeId, int? locationId, int? userId)
         {
+            // Отладка: проверяем параметры фильтрации
+            Console.WriteLine($"Параметры фильтрации  Тип: {propertyTypeId}, Локация: {locationId}, Пользователь: {userId} - PropertyController.cs:40");
+            
             var properties = _context.Properties
                 .Include(p => p.PropertyType)
                 .Include(p => p.Location)
@@ -39,33 +47,110 @@ namespace uchet.Controllers
 
             if (propertyTypeId.HasValue)
             {
+                Console.WriteLine($"Фильтрация по типу имущества: {propertyTypeId.Value} - PropertyController.cs:50");
                 properties = properties.Where(p => p.PropertyTypeId == propertyTypeId.Value);
+                Console.WriteLine($"Количество имущества после фильтрации по типу: {properties.Count()} - PropertyController.cs:52");
             }
 
             if (locationId.HasValue)
                 {
+                    Console.WriteLine($"Фильтрация по локации: {locationId.Value} - PropertyController.cs:57");
                     properties = properties.Where(p => p.LocationId == locationId.Value);
+                    Console.WriteLine($"Количество имущества после фильтрации по локации: {properties.Count()} - PropertyController.cs:59");
                 }
 
             if (userId.HasValue)
             {
+                Console.WriteLine($"Фильтрация по пользователю: {userId.Value} - PropertyController.cs:64");
                 properties = properties.Where(p => p.AssignedUserId == userId.Value);
+                Console.WriteLine($"Количество имущества после фильтрации по пользователю: {properties.Count()} - PropertyController.cs:66");
             }
 
             var propertyTypes = await _context.PropertyTypes.ToListAsync();
             var locations = await _context.Locations.ToListAsync();
             var users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            
+            // Отладка: проверяем загрузку данных
+            Console.WriteLine($"Загружено типов имущества: {propertyTypes.Count} - PropertyController.cs:74");
+            Console.WriteLine($"Загружено локаций: {locations.Count} - PropertyController.cs:75");
+            Console.WriteLine($"Загружено активных пользователей: {users.Count} - PropertyController.cs:76");
+            
+            // Отладка: проверяем содержимое базы данных
+            var locationsInDb = await _context.Locations.ToListAsync();
+            var propertiesInDb = await _context.Properties.ToListAsync();
+            Console.WriteLine($"Локаций в базе: {locationsInDb.Count} - PropertyController.cs:81");
+            Console.WriteLine($"Имущества в базе: {propertiesInDb.Count} - PropertyController.cs:82");
+            
+            // Отладка: выводим содержимое списков
+            foreach (var location in locationsInDb)
+            {
+                Console.WriteLine($"Локация в базе: {location.Id}  {location.Name} - PropertyController.cs:87");
+            }
+            
+            foreach (var propertyType in propertyTypes)
+            {
+                Console.WriteLine($"Тип имущества: {propertyType.Id}  {propertyType.Name} - PropertyController.cs:92");
+            }
+            
+            // Отладка: выводим содержимое списка пользователей
+            foreach (var user in users)
+            {
+                Console.WriteLine($"Пользователь: {user.Id}  {user.Name} - PropertyController.cs:98");
+            }
+            
+            // Отладка: выводим информацию о первых 5 имуществах
+            foreach (var property in propertiesInDb.Take(5))
+            {
+                Console.WriteLine($"Имущество в базе: {property.Id}  {property.Name}, Локация ID: {property.LocationId}, Тип ID: {property.PropertyTypeId} - PropertyController.cs:104");
+            }
 
             ViewBag.PropertyTypes = new SelectList(propertyTypes, "Id", "Name", propertyTypeId);
             ViewBag.Locations = new SelectList(locations, "Id", "Name", locationId);
             ViewBag.Users = new SelectList(users, "Id", "Name", userId);
 
+            // Отладка: проверяем общее количество имущества в базе
+            var totalProperties = await _context.Properties.CountAsync();
+            Console.WriteLine($"Общее количество имущества в базе: {totalProperties} - PropertyController.cs:113");
+            
             var propertyList = await properties.ToListAsync();
-            Console.WriteLine($"Количество имущества: {propertyList.Count} - PropertyController.cs:64");
-            foreach (var prop in propertyList)
+            Console.WriteLine($"Количество имущества после фильтрации: {propertyList.Count} - PropertyController.cs:116");
+            foreach (var prop in propertyList.Take(5)) // Ограничиваем вывод первыми 5 элементами
             {
-                Console.WriteLine($"Имущество: {prop.Name}, Срок использования: {prop.UsagePeriod} - PropertyController.cs:67");
+                Console.WriteLine($"Имущество: {prop.Name}, Срок использования: {prop.UsagePeriod} - PropertyController.cs:119");
+                Console.WriteLine($"Локация: {prop.Location?.Name}, Тип: {prop.PropertyType?.Name} - PropertyController.cs:120");
+                Console.WriteLine($"ID локации: {prop.LocationId}, ID типа: {prop.PropertyTypeId} - PropertyController.cs:121");
+                Console.WriteLine($"Локация существует: {prop.Location != null}, Тип существует: {prop.PropertyType != null} - PropertyController.cs:122");
+                Console.WriteLine($"Назначено пользователю: {prop.AssignedUser?.Name} - PropertyController.cs:123");
+                Console.WriteLine($"ID назначенного пользователя: {prop.AssignedUserId} - PropertyController.cs:124");
+                Console.WriteLine($"Проверка отображения локации: {prop.Location?.Name}, Типа: {prop.PropertyType?.Name} - PropertyController.cs:125");
             }
+            
+            // Отладка: проверяем количество локаций и типов имущества
+            var locationsCount = await _context.Locations.CountAsync();
+            var propertyTypesCount = await _context.PropertyTypes.CountAsync();
+            Console.WriteLine($"Количество локаций: {locationsCount}, Количество типов имущества: {propertyTypesCount} - PropertyController.cs:131");
+            
+            // Отладка: проверяем содержимое списков локаций и типов имущества
+            Console.WriteLine($"Количество локаций в ViewBag: {locations.Count} - PropertyController.cs:134");
+            Console.WriteLine($"Количество типов имущества в ViewBag: {propertyTypes.Count} - PropertyController.cs:135");
+            
+            // Отладка: выводим содержимое списков
+            foreach (var location in locations)
+            {
+                Console.WriteLine($"Локация: {location.Id}  {location.Name} - PropertyController.cs:140");
+            }
+            
+            foreach (var propertyType in propertyTypes)
+            {
+                Console.WriteLine($"Тип имущества: {propertyType.Id}  {propertyType.Name} - PropertyController.cs:145");
+            }
+            
+            // Отладка: выводим содержимое списка пользователей
+            foreach (var user in users)
+            {
+                Console.WriteLine($"Пользователь: {user.Id}  {user.Name} - PropertyController.cs:151");
+            }
+            
             return View(propertyList);
         }
 
@@ -77,13 +162,43 @@ namespace uchet.Controllers
                 .Include(p => p.AssignedUser)
                 .Include(p => p.PropertyFiles)
                 .FirstOrDefaultAsync(p => p.Id == id);
+            
+            // Отладка: проверяем загрузку свойства
+            Console.WriteLine($"Загружено свойство: {property?.Name} - PropertyController.cs:167");
+            Console.WriteLine($"ID локации: {property?.LocationId}, ID типа: {property?.PropertyTypeId} - PropertyController.cs:168");
+            Console.WriteLine($"Локация существует: {property?.Location != null}, Тип существует: {property?.PropertyType != null} - PropertyController.cs:169");
                 
             if (property == null)
             {
                 return NotFound();
             }
             
-            Console.WriteLine($"Детали имущества: {property.Name}, Срок использования: {property.UsagePeriod} - PropertyController.cs:86");
+            Console.WriteLine($"Детали имущества: {property.Name}, Срок использования: {property.UsagePeriod} - PropertyController.cs:176");
+            Console.WriteLine($"Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:177");
+            
+            // Отладка: проверяем связанные данные
+            Console.WriteLine($"ID локации: {property.LocationId}, ID типа: {property.PropertyTypeId} - PropertyController.cs:180");
+            Console.WriteLine($"Назначено пользователю: {property.AssignedUserId} - PropertyController.cs:181");
+            Console.WriteLine($"Назначенный пользователь: {property.AssignedUser?.Name} - PropertyController.cs:182");
+            
+            // Отладка: проверяем наличие связанных объектов
+            Console.WriteLine($"Локация существует: {property.Location != null} - PropertyController.cs:185");
+            Console.WriteLine($"Тип имущества существует: {property.PropertyType != null} - PropertyController.cs:186");
+            Console.WriteLine($"Назначенный пользователь существует: {property.AssignedUser != null} - PropertyController.cs:187");
+            
+            // Отладка: проверяем ID связанных объектов
+            Console.WriteLine($"ID локации: {property.Location?.Id}, ID типа: {property.PropertyType?.Id} - PropertyController.cs:190");
+            Console.WriteLine($"ID назначенного пользователя: {property.AssignedUser?.Id} - PropertyController.cs:191");
+            
+            // Отладка: проверяем названия связанных объектов
+            Console.WriteLine($"Название локации: {property.Location?.Name} - PropertyController.cs:194");
+            Console.WriteLine($"Название типа: {property.PropertyType?.Name} - PropertyController.cs:195");
+            Console.WriteLine($"Имя назначенного пользователя: {property.AssignedUser?.Name} - PropertyController.cs:196");
+            
+            // Отладка: проверяем, все ли данные загружены
+            Console.WriteLine($"Все данные загружены: Локация={property.Location != null}, Тип={property.PropertyType != null}, Пользователь={property.AssignedUser != null} - PropertyController.cs:199");
+            Console.WriteLine($"Проверка отображения локации: {property.Location?.Name}, Типа: {property.PropertyType?.Name} - PropertyController.cs:200");
+            
             return View(property);
         }
 
@@ -93,6 +208,27 @@ namespace uchet.Controllers
             var propertyTypes = await _context.PropertyTypes.ToListAsync();
             var locations = await _context.Locations.ToListAsync();
             var users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            
+            // Отладка: проверяем загрузку данных для создания
+            Console.WriteLine($"Загружено типов имущества для создания: {propertyTypes.Count} - PropertyController.cs:213");
+            Console.WriteLine($"Загружено локаций для создания: {locations.Count} - PropertyController.cs:214");
+            Console.WriteLine($"Загружено пользователей для создания: {users.Count} - PropertyController.cs:215");
+            
+            // Отладка: выводим содержимое списков для создания
+            foreach (var location in locations)
+            {
+                Console.WriteLine($"Локация для создания: {location.Id}  {location.Name} - PropertyController.cs:220");
+            }
+            
+            foreach (var propertyType in propertyTypes)
+            {
+                Console.WriteLine($"Тип имущества для создания: {propertyType.Id}  {propertyType.Name} - PropertyController.cs:225");
+            }
+            
+            foreach (var user in users)
+            {
+                Console.WriteLine($"Пользователь для создания: {user.Id}  {user.Name} - PropertyController.cs:230");
+            }
             
             ViewBag.PropertyTypes = new SelectList(propertyTypes, "Id", "Name");
             ViewBag.Locations = new SelectList(locations, "Id", "Name");
@@ -127,19 +263,19 @@ namespace uchet.Controllers
             }
             
             // Добавляем отладочную информацию
-            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:130");
-            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:131");
-            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:132");
-            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:133");
+            Console.WriteLine($"Попытка создания имущества: {propertyDto.Name} - PropertyController.cs:266");
+            Console.WriteLine($"PropertyTypeId: {propertyDto.PropertyTypeId} - PropertyController.cs:267");
+            Console.WriteLine($"LocationId: {propertyDto.LocationId} - PropertyController.cs:268");
+            Console.WriteLine($"InventoryNumber: {propertyDto.InventoryNumber} - PropertyController.cs:269");
             
             // Проверяем валидацию модели
-            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:136");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid} - PropertyController.cs:272");
             
             if (ModelState.IsValid)
             {
                 try
                 {
-                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:142");
+                    Console.WriteLine("Модель валидна, начинаем сохранение... - PropertyController.cs:278");
                     
                     // Создаем новый экземпляр Property на основе данных из DTO
                     var property = new Property
@@ -150,41 +286,51 @@ namespace uchet.Controllers
                         PropertyTypeId = propertyDto.PropertyTypeId,
                         AssignedUserId = propertyDto.AssignedUserId,
                         InventoryNumber = propertyDto.InventoryNumber,
-                        BalanceDate = propertyDto.BalanceDate,
+                        BalanceDate = propertyDto.BalanceDate?.ToUniversalTime(),
                         UsagePeriod = propertyDto.UsagePeriod,
                         Cost = propertyDto.Cost,
-                        LastMaintenanceDate = propertyDto.LastMaintenanceDate,
-                        ExpiryDate = propertyDto.ExpiryDate,
+                        LastMaintenanceDate = propertyDto.LastMaintenanceDate?.ToUniversalTime(),
+                        ExpiryDate = propertyDto.ExpiryDate?.ToUniversalTime(),
                         QRCode = GenerateQRCode(propertyDto.InventoryNumber), // Генерируем QR код на основе инвентарного номера
                         Barcode = GenerateBarcode(propertyDto.InventoryNumber) // Генерируем штрих-код на основе инвентарного номера
                     };
+                    
+                    // Отладка: проверяем создание имущества
+                    Console.WriteLine($"Создание имущества: {property.Name}, Локация ID: {property.LocationId}, Тип ID: {property.PropertyTypeId} - PropertyController.cs:299");
                     
                     // Добавляем имущество в контекст
                     _context.Properties.Add(property);
                     await _context.SaveChangesAsync();
                     
-                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:166");
+                    Console.WriteLine($"Имущество сохранено с Id: {property.Id} - PropertyController.cs:305");
                     
-                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:168");
+                    // Отладка: проверяем сохранение связанных данных
+                    var savedProperty = await _context.Properties
+                        .Include(p => p.Location)
+                        .Include(p => p.PropertyType)
+                        .FirstOrDefaultAsync(p => p.Id == property.Id);
+                    Console.WriteLine($"Сохраненное имущество: {savedProperty?.Name}, Локация: {savedProperty?.Location?.Name}, Тип: {savedProperty?.PropertyType?.Name} - PropertyController.cs:312");
+                    
+                    Console.WriteLine("Имущество успешно обновлено с QR и штрихкодом - PropertyController.cs:314");
                     
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
                 {
                     // Логируем ошибку
-                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:175");
+                    Console.WriteLine($"Ошибка при добавлении имущества: {ex} - PropertyController.cs:321");
                     ModelState.AddModelError("", "Произошла ошибка при добавлении имущества: " + ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Модель не валидна: - PropertyController.cs:181");
+                Console.WriteLine("Модель не валидна: - PropertyController.cs:327");
                 foreach (var key in ModelState.Keys)
                 {
                     var state = ModelState[key];
                     if (state.Errors.Count > 0)
                     {
-                        Console.WriteLine("Поле - PropertyController.cs:187" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
+                        Console.WriteLine("Поле - PropertyController.cs:333" + key + ": " + string.Join(", ", state.Errors.Select(e => e.ErrorMessage)) + "");
                     }
                 }
             }
@@ -199,10 +345,10 @@ namespace uchet.Controllers
                 PropertyTypeId = propertyDto.PropertyTypeId,
                 AssignedUserId = propertyDto.AssignedUserId,
                 InventoryNumber = propertyDto.InventoryNumber,
-                BalanceDate = propertyDto.BalanceDate,
+                BalanceDate = propertyDto.BalanceDate?.ToUniversalTime(),
                 UsagePeriod = propertyDto.UsagePeriod,
                 Cost = propertyDto.Cost,
-                LastMaintenanceDate = propertyDto.LastMaintenanceDate,
+                LastMaintenanceDate = propertyDto.LastMaintenanceDate?.ToUniversalTime(),
                 ExpiryDate = propertyDto.ExpiryDate
             };
             
@@ -218,9 +364,33 @@ namespace uchet.Controllers
                 return NotFound();
             }
             
+            // Отладка: проверяем загрузку имущества для редактирования
+            Console.WriteLine($"Загружено имущество для редактирования: {property.Name}, Локация ID: {property.LocationId}, Тип ID: {property.PropertyTypeId} - PropertyController.cs:368");
+            
             var propertyTypes = await _context.PropertyTypes.ToListAsync();
             var locations = await _context.Locations.ToListAsync();
             var users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            
+            // Отладка: проверяем загрузку данных для редактирования
+            Console.WriteLine($"Загружено типов имущества для редактирования: {propertyTypes.Count} - PropertyController.cs:375");
+            Console.WriteLine($"Загружено локаций для редактирования: {locations.Count} - PropertyController.cs:376");
+            Console.WriteLine($"Загружено пользователей для редактирования: {users.Count} - PropertyController.cs:377");
+            
+            // Отладка: выводим содержимое списков для редактирования
+            foreach (var location in locations)
+            {
+                Console.WriteLine($"Локация для редактирования: {location.Id}  {location.Name} - PropertyController.cs:382");
+            }
+            
+            foreach (var propertyType in propertyTypes)
+            {
+                Console.WriteLine($"Тип имущества для редактирования: {propertyType.Id}  {propertyType.Name} - PropertyController.cs:387");
+            }
+            
+            foreach (var user in users)
+            {
+                Console.WriteLine($"Пользователь для редактирования: {user.Id}  {user.Name} - PropertyController.cs:392");
+            }
             
             ViewBag.PropertyTypes = new SelectList(propertyTypes, "Id", "Name", property.PropertyTypeId);
             ViewBag.Locations = new SelectList(locations, "Id", "Name", property.LocationId);
@@ -251,8 +421,18 @@ namespace uchet.Controllers
             {
                 try
                 {
+                    // Отладка: проверяем обновление имущества
+                    Console.WriteLine($"Обновление имущества: {property.Name}, Локация ID: {property.LocationId}, Тип ID: {property.PropertyTypeId} - PropertyController.cs:425");
+                    
                     _context.Update(property);
                     await _context.SaveChangesAsync();
+                    
+                    // Отладка: проверяем сохранение обновленного имущества
+                    var updatedProperty = await _context.Properties
+                        .Include(p => p.Location)
+                        .Include(p => p.PropertyType)
+                        .FirstOrDefaultAsync(p => p.Id == property.Id);
+                    Console.WriteLine($"Обновленное имущество: {updatedProperty?.Name}, Локация: {updatedProperty?.Location?.Name}, Тип: {updatedProperty?.PropertyType?.Name} - PropertyController.cs:435");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -280,6 +460,9 @@ namespace uchet.Controllers
                 return NotFound();
             }
             
+            // Отладка: проверяем загрузку имущества для удаления
+            Console.WriteLine($"Удаление: {property.Name}, Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:464");
+            
             return View(property);
         }
         
@@ -290,6 +473,9 @@ namespace uchet.Controllers
             var property = await _context.Properties.FindAsync(id);
             if (property != null)
             {
+                // Отладка: проверяем удаление имущества
+                Console.WriteLine($"Удаление подтверждено: {property.Name}, Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:477");
+                
                 _context.Properties.Remove(property);
                 await _context.SaveChangesAsync();
             }
@@ -311,6 +497,9 @@ namespace uchet.Controllers
             {
                 return NotFound();
             }
+            
+            // Отладка: проверяем загрузку имущества для загрузки файла
+            Console.WriteLine($"Загрузка файла: {property.Name}, Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:502");
             
             // Создаем директорию для файлов имущества если её нет
             var propertyFilesPath = Path.Combine(_environment.WebRootPath, "property_files");
@@ -371,6 +560,9 @@ namespace uchet.Controllers
                 return NotFound();
             }
             
+            // Отладка: проверяем загрузку имущества для генерации QR кода
+            Console.WriteLine($"Генерация QR кода: {property.Name}, Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:564");
+            
             // Генерация изображения QR кода на основе инвентарного номера
             using (var qrGenerator = new QRCodeGenerator())
             using (var qrCodeData = qrGenerator.CreateQrCode(property.InventoryNumber, QRCodeGenerator.ECCLevel.Q))
@@ -391,14 +583,17 @@ namespace uchet.Controllers
             var property = _context.Properties.FirstOrDefault(p => p.Id == id);
             if (property == null)
             {
-                Console.WriteLine($"Property with id {id} not found - PropertyController.cs:394");
+                Console.WriteLine($"Property with id {id} not found - PropertyController.cs:586");
                 return NotFound();
             }
+            
+            // Отладка: проверяем загрузку имущества для генерации штрих-кода
+            Console.WriteLine($"Генерация штрихкода: {property.Name}, Локация: {property.Location?.Name}, Тип: {property.PropertyType?.Name} - PropertyController.cs:591");
             
             // Проверяем, есть ли инвентарный номер
             if (string.IsNullOrEmpty(property.InventoryNumber))
             {
-                Console.WriteLine($"Inventory number is null or empty for property id {id} - PropertyController.cs:401");
+                Console.WriteLine($"Inventory number is null or empty for property id {id} - PropertyController.cs:596");
                 // Возвращаем пустое изображение или изображение-заглушку
                 using (var bitmap = new Bitmap(300, 100))
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -437,13 +632,13 @@ namespace uchet.Controllers
                 using (var stream = new MemoryStream())
                 {
                     bitmap.Save(stream, ImageFormat.Png);
-                    Console.WriteLine($"Successfully generated barcode for property id {id} with inventory number {property.InventoryNumber} - PropertyController.cs:440");
+                    Console.WriteLine($"Successfully generated barcode for property id {id} with inventory number {property.InventoryNumber} - PropertyController.cs:635");
                     return File(stream.ToArray(), "image/png");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error generating barcode for property id {id}: {ex.Message} - PropertyController.cs:446");
+                Console.WriteLine($"Error generating barcode for property id {id}: {ex.Message} - PropertyController.cs:641");
                 // Возвращаем изображение с ошибкой
                 using (var bitmap = new Bitmap(300, 100))
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -570,6 +765,10 @@ namespace uchet.Controllers
                                 var locationName = row.Cell(5).Value.ToString();
                                 var location = await _context.Locations.FirstOrDefaultAsync(l => l.Name == locationName);
                                 
+                                // Отладка: проверяем загрузку данных для импорта
+                                Console.WriteLine($"Импорт: Тип имущества '{propertyTypeName}' найден: {propertyType != null} - PropertyController.cs:769");
+                                Console.WriteLine($"Импорт: Размещение '{locationName}' найдено: {location != null} - PropertyController.cs:770");
+                                
                                 // Получаем назначенного пользователя (если указан)
                                 User assignedUser = null;
                                 var assignedUserName = row.Cell(6).Value.ToString();
@@ -627,14 +826,17 @@ namespace uchet.Controllers
                                     PropertyTypeId = propertyType?.Id ?? 0,
                                     LocationId = location?.Id ?? 0,
                                     AssignedUserId = assignedUser?.Id,
-                                    BalanceDate = balanceDate,
+                                    BalanceDate = balanceDate?.ToUniversalTime(),
                                     UsagePeriod = usagePeriod,
                                     Cost = cost,
-                                    LastMaintenanceDate = lastMaintenanceDate,
-                                    ExpiryDate = expiryDate,
+                                    LastMaintenanceDate = lastMaintenanceDate?.ToUniversalTime(),
+                                    ExpiryDate = expiryDate?.ToUniversalTime(),
                                     QRCode = GenerateQRCode(inventoryNumber),
                                     Barcode = GenerateBarcode(inventoryNumber)
                                 };
+                                
+                                // Отладка: проверяем создание имущества при импорте
+                                Console.WriteLine($"Импорт: Создание имущества: {property.Name}, Локация ID: {property.LocationId}, Тип ID: {property.PropertyTypeId} - PropertyController.cs:839");
                                 
                                 // Проверяем, что тип имущества и размещение существуют
                                 if (property.PropertyTypeId == 0)
@@ -707,6 +909,13 @@ namespace uchet.Controllers
 
             var propertyList = await properties.ToListAsync();
             
+            // Отладка: проверяем загрузку данных для печати QR кодов
+            Console.WriteLine($"Печать QR кодов: Загружено {propertyList.Count} имуществ - PropertyController.cs:913");
+            foreach (var prop in propertyList.Take(5))
+            {
+                Console.WriteLine($"Печать QR кодов: {prop.Name}, Локация: {prop.Location?.Name}, Тип: {prop.PropertyType?.Name} - PropertyController.cs:916");
+            }
+            
             // Получаем список активных бирок для выбора
             ViewBag.Tags = _context.Tags.Where(t => t.IsActive).ToList();
             ViewBag.SelectedTagId = tagId;
@@ -761,11 +970,58 @@ namespace uchet.Controllers
 
             var propertyList = await properties.ToListAsync();
             
+            // Отладка: проверяем загрузку данных для печати штрих-кодов
+            Console.WriteLine($"Печать штрихкодов: Загружено {propertyList.Count} имуществ - PropertyController.cs:974");
+            foreach (var prop in propertyList.Take(5))
+            {
+                Console.WriteLine($"Печать штрихкодов: {prop.Name}, Локация: {prop.Location?.Name}, Тип: {prop.PropertyType?.Name} - PropertyController.cs:977");
+            }
+            
             // Получаем список активных бирок для выбора
             ViewBag.Tags = _context.Tags.Where(t => t.IsActive).ToList();
             ViewBag.SelectedTagId = tagId;
             
             return View(propertyList);
+        }
+        
+        public async Task<IActionResult> ExportBarcodesToDocx(int? propertyTypeId, int? locationId, int? userId)
+        {
+            var properties = _context.Properties
+                .Include(p => p.PropertyType)
+                .Include(p => p.Location)
+                .Include(p => p.AssignedUser)
+                .AsQueryable();
+
+            if (propertyTypeId.HasValue)
+            {
+                properties = properties.Where(p => p.PropertyTypeId == propertyTypeId.Value);
+            }
+
+            if (locationId.HasValue)
+            {
+                properties = properties.Where(p => p.LocationId == locationId.Value);
+            }
+
+            if (userId.HasValue)
+            {
+                properties = properties.Where(p => p.AssignedUserId == userId.Value);
+            }
+
+            var propertyList = await properties.ToListAsync();
+            
+            // Отладка: проверяем загрузку данных для экспорта бирок
+            Console.WriteLine($"Экспорт бирок: Загружено {propertyList.Count} имуществ - PropertyController.cs:1013");
+            foreach (var prop in propertyList.Take(5))
+            {
+                Console.WriteLine($"Экспорт бирок: {prop.Name}, Локация: {prop.Location?.Name}, Тип: {prop.PropertyType?.Name} - PropertyController.cs:1016");
+            }
+            
+            // Генерируем документ
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var documentBytes = _barcodeDocxService.GenerateBarcodeDocument(propertyList, baseUrl);
+            
+            // Возвращаем файл
+            return File(documentBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "barcodes.docx");
         }
     }
 }

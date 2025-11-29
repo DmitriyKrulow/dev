@@ -35,10 +35,10 @@
           }
         }
       },
-      "DocumentFormat.OpenXml/3.1.1": {
+      "DocumentFormat.OpenXml/3.3.0": {
         "type": "package",
         "dependencies": {
-          "DocumentFormat.OpenXml.Framework": "3.1.1"
+          "DocumentFormat.OpenXml.Framework": "3.3.0"
         },
         "compile": {
           "lib/net8.0/DocumentFormat.OpenXml.dll": {
@@ -51,7 +51,7 @@
           }
         }
       },
-      "DocumentFormat.OpenXml.Framework/3.1.1": {
+      "DocumentFormat.OpenXml.Framework/3.3.0": {
         "type": "package",
         "dependencies": {
           "System.IO.Packaging": "8.0.1"
@@ -1293,15 +1293,15 @@
         "lib/netstandard2.1/ClosedXML.Parser.xml"
       ]
     },
-    "DocumentFormat.OpenXml/3.1.1": {
-      "sha512": "2z9QBzeTLNNKWM9SaOSDMegfQk/7hDuElOsmF77pKZMkFRP/GHA/W/4yOAQD9kn15N/FsFxHn3QVYkatuZghiA==",
+    "DocumentFormat.OpenXml/3.3.0": {
+      "sha512": "JogRPJNiE6kKvbuCqVRX691pPWeGMqdQgjrUwRYkdpfkMmtElfqAgcRR73geYj7OtBeEpstldZXXzJw27LUI9w==",
       "type": "package",
-      "path": "documentformat.openxml/3.1.1",
+      "path": "documentformat.openxml/3.3.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "documentformat.openxml.3.1.1.nupkg.sha512",
+        "documentformat.openxml.3.3.0.nupkg.sha512",
         "documentformat.openxml.nuspec",
         "icon.png",
         "lib/net35/DocumentFormat.OpenXml.dll",
@@ -1316,15 +1316,15 @@
         "lib/netstandard2.0/DocumentFormat.OpenXml.xml"
       ]
     },
-    "DocumentFormat.OpenXml.Framework/3.1.1": {
-      "sha512": "6APEp/ElZV58S/4v8mf4Ke3ONEDORs64MqdD64Z7wWpcHANB9oovQsGIwtqjnKihulOj7T0a6IxHIHOfMqKOng==",
+    "DocumentFormat.OpenXml.Framework/3.3.0": {
+      "sha512": "R5CLzEoeyr7XDB7g3NTxRobcU19agaxVAhGZm+fZUShJGiU4bw8oUgnA2BNFepigJckfFMayOBMAbV3kDXNInA==",
       "type": "package",
-      "path": "documentformat.openxml.framework/3.1.1",
+      "path": "documentformat.openxml.framework/3.3.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "documentformat.openxml.framework.3.1.1.nupkg.sha512",
+        "documentformat.openxml.framework.3.3.0.nupkg.sha512",
         "documentformat.openxml.framework.nuspec",
         "icon.png",
         "lib/net35/DocumentFormat.OpenXml.Framework.dll",
@@ -3808,6 +3808,7 @@
   "projectFileDependencyGroups": {
     "net10.0": [
       "ClosedXML >= 0.105.0",
+      "DocumentFormat.OpenXml >= 3.3.0",
       "Microsoft.EntityFrameworkCore.Tools >= 10.0.0",
       "Npgsql.EntityFrameworkCore.PostgreSQL >= 10.0.0",
       "QRCoder >= 1.7.0",
@@ -3867,6 +3868,10 @@
           "ClosedXML": {
             "target": "Package",
             "version": "[0.105.0, )"
+          },
+          "DocumentFormat.OpenXml": {
+            "target": "Package",
+            "version": "[3.3.0, )"
           },
           "Microsoft.EntityFrameworkCore.Tools": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",

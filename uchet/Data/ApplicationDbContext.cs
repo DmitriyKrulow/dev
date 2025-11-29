@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using uchet.Models;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace uchet.Data
 {
@@ -17,6 +18,14 @@ namespace uchet.Data
         public DbSet<PropertyFile> PropertyFiles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<Inventory> Inventories { get; set; }
+        public DbSet<InventoryItem> InventoryItems { get; set; }
+        
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.ConfigureWarnings(warnings =>
+                warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,6 +73,18 @@ namespace uchet.Data
                 .HasOne(pf => pf.Property)
                 .WithMany(p => p.PropertyFiles)
                 .HasForeignKey(pf => pf.PropertyId);
+                
+            // Настройка связи между Inventory и InventoryItem
+            modelBuilder.Entity<InventoryItem>()
+                .HasOne(ii => ii.Inventory)
+                .WithMany(i => i.InventoryItems)
+                .HasForeignKey(ii => ii.InventoryId);
+                
+            // Настройка связи между InventoryItem и Property
+            modelBuilder.Entity<InventoryItem>()
+                .HasOne(ii => ii.Property)
+                .WithMany()
+                .HasForeignKey(ii => ii.PropertyId);
 
             // Добавляем тестовые данные
             modelBuilder.Entity<Role>().HasData(

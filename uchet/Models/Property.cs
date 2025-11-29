@@ -47,5 +47,9 @@ namespace uchet.Models
         public User AssignedUser { get; set; }
         
         public ICollection<PropertyFile> PropertyFiles { get; set; } = new List<PropertyFile>();
+        
+        public DateTime? LastInventoryCheckDate { get; set; }
+        
+        public bool IsCheckedInLastInventory { get; set; } = false;
     }
 }

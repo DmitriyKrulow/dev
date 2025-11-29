@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using uchet.Data;
+using uchet.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,10 +20,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
+// Добавляем IHttpClientFactory для сервиса генерации документов
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<BarcodeDocxService>();
 var app = builder.Build();
 
 // Настройка URL для Kestrel
-app.Urls.Add("http://localhost:5250");
+app.Urls.Add("http://localhost:5251");
 
 // Проверяем и создаем таблицы при необходимости
 using (var scope = app.Services.CreateScope())

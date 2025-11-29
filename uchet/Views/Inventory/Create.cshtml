@@ -1,0 +1,27 @@
+@model uchet.Models.Inventory
+
+@{
+    ViewData["Title"] = "Создать инвентаризацию";
+}
+
+<h2>Создать инвентаризацию</h2>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <label for="name" class="control-label">Название инвентаризации</label>
+        <input name="name" class="form-control" required />
+    </div>
+    
+    <div class="form-group">
+        <label for="locationId" class="control-label">Локация</label>
+        <select name="locationId" asp-items="ViewBag.Locations" class="form-control" required>
+            <option value="">Выберите локацию</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <input type="submit" value="Создать" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>

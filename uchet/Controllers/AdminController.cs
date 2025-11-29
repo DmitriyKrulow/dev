@@ -29,7 +29,7 @@ namespace uchet.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddUser(string name, string email, int roleId, int? locationId, string password = null)
+        public IActionResult AddUser(string name, string email, int roleId, int? locationId, string? password = null)
         {
             // Если пароль не указан, генерируем случайный пароль
             if (string.IsNullOrEmpty(password))
@@ -43,7 +43,7 @@ namespace uchet.Controllers
                 Email = email,
                 RoleId = roleId,
                 LocationId = locationId,
-                Password = password
+                Password = password!
             };
 
             _context.Users.Add(user);

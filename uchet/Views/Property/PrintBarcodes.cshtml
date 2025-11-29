@@ -73,11 +73,17 @@
 
         .label-barcode {
             text-align: center;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .label-barcode img {
-            max-width: calc(@tagWidth - 10mm);
-            max-height: calc(@tagHeight / 2);
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
         }
 
         @@media print {

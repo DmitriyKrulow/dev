@@ -1,0 +1,106 @@
+@model uchet.Models.Inventory
+
+@{
+    ViewData["Title"] = "Детали инвентаризации";
+}
+
+<h2>Детали инвентаризации</h2>
+
+<div>
+    <h4>Инвентаризация: @Model.Name</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Локация</dt>
+        <dd class="col-sm-10">@Model.Location?.Name</dd>
+        
+        <dt class="col-sm-2">Дата начала</dt>
+        <dd class="col-sm-10">@Model.StartDate.ToString("dd.MM.yyyy HH:mm")</dd>
+        
+        @if (Model.EndDate.HasValue)
+        {
+            <dt class="col-sm-2">Дата завершения</dt>
+            <dd class="col-sm-10">@Model.EndDate.Value.ToString("dd.MM.yyyy HH:mm")</dd>
+        }
+        
+        <dt class="col-sm-2">Статус</dt>
+        <dd class="col-sm-10">
+            @if (Model.IsCompleted)
+            {
+                <span class="badge bg-success">Завершена</span>
+            }
+            else
+            {
+                <span class="badge bg-warning">В процессе</span>
+            }
+        </dd>
+        
+        <dt class="col-sm-2">Прогресс</dt>
+        <dd class="col-sm-10">
+            @if (Model.TotalItems > 0)
+            {
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: @((Model.CheckedItems * 100 / Model.TotalItems))%" 
+                         aria-valuenow="@Model.CheckedItems" 
+                         aria-valuemin="0" 
+                         aria-valuemax="@Model.TotalItems">
+                        @Model.CheckedItems / @Model.TotalItems
+                    </div>
+                </div>
+            }
+        </dd>
+    </dl>
+</div>
+
+<h4>Имущество для проверки</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Инвентарный номер</th>
+            <th>Статус</th>
+            <th>Дата проверки</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.InventoryItems.OrderBy(ii => ii.Property.Name))
+        {
+            <tr>
+                <td>@item.Property.Name</td>
+                <td>@item.Property.PropertyType?.Name</td>
+                <td>@item.Property.InventoryNumber</td>
+                <td>
+                    @if (item.IsChecked)
+                    {
+                        <span class="badge bg-success">Проверено</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Не проверено</span>
+                    }
+                </td>
+                <td>
+                    @if (item.CheckDate.HasValue)
+                    {
+                        @item.CheckDate.Value.ToString("dd.MM.yyyy HH:mm")
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div>
+    @if (!Model.IsCompleted)
+    {
+        <a asp-action="Scan" asp-route-id="@Model.Id" class="btn btn-success">Сканировать имущество</a>
+        <form asp-action="Complete" asp-route-id="@Model.Id" method="post" style="display: inline;">
+            <button type="submit" class="btn btn-warning" 
+                    onclick="return confirm('Вы уверены, что хотите завершить инвентаризацию?')">
+                Завершить инвентаризацию
+            </button>
+        </form>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div>

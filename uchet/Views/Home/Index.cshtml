@@ -1,86 +1,86 @@
-﻿@model IEnumerable<uchet.Models.Property>
+﻿@model uchet.Models.DashboardViewModel
 
 @{
-    ViewData["Title"] = "Список имущества";
+    ViewData["Title"] = "Информационная панель";
 }
 
-<h2>Имущество</h2>
-
-<p>
-    <a asp-action="Create" class="btn btn-primary">Добавить имущество</a>
-</p>
-
-<!-- Фильтры -->
-<form method="get" asp-action="Index" class="mb-4">
-    <div class="row">
-        <div class="col-md-3">
-            <select name="propertyTypeId" asp-items="ViewBag.PropertyTypes" class="form-control">
-                <option value="">Все типы</option>
-            </select>
+<div class="container">
+    <h2>Информационная панель</h2>
+    
+    <!-- Карточки с основными метриками -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Общее количество имущества</h5>
+                    <p class="card-text display-4">@Model.TotalPropertyCount</p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-3">
-            <select name="locationId" asp-items="ViewBag.Locations" class="form-control">
-                <option value="">Все места</option>
-            </select>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Требует ремонта</h5>
+                    <p class="card-text display-4">@Model.ExpiredPropertyCount</p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-3">
-            <select name="userId" asp-items="ViewBag.Users" class="form-control">
-                <option value="">Все пользователи</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-secondary">Фильтровать</button>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Требует списания</h5>
+                    <p class="card-text display-4">@Model.WriteOffPropertyCount</p>
+                </div>
+            </div>
         </div>
     </div>
-</form>
+    
+    <!-- Графики -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Расходы по месяцам</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="expensesChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<table class="table table-striped table-bordered">
-    <thead class="table-dark">
-        <tr>
-            <th>Название</th>
-            <th>Описание</th>
-            <th>Инвентарный №</th>
-            <th>Тип</th>
-            <th>Местоположение</th>
-            <th>Назначен</th>
-            <th>Дата баланса</th>
-            <th>Срок (мес)</th>
-            <th>Стоимость</th>
-            <th>Последнее ТО</th>
-            <th>Годен до</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model.Any())
-        {
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.Name</td>
-                    <td>@item.Description</td>
-                    <td>@item.InventoryNumber</td>
-                    <td>@item.PropertyType?.Name</td>
-                    <td>@item.Location?.Name</td>
-                    <td>@item.AssignedUser?.Name</td>
-                    <td>@(item.BalanceDate?.ToString("dd.MM.yyyy") ?? "-")</td>
-                    <td>@item.UsagePeriod</td>
-                    <td>@(item.Cost?.ToString("C") ?? "-")</td>
-                    <td>@(item.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "-")</td>
-                    <td>@(item.ExpiryDate?.ToString("dd.MM.yyyy") ?? "-")</td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Детали</a>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Править</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Удалить</a>
-                    </td>
-                </tr>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Получаем данные из модели
+        var monthlyExpenses = @Html.Raw(Json.Serialize(Model.MonthlyExpenses));
+        
+        // Подготавливаем данные для графика
+        var labels = monthlyExpenses.map(item => item.month);
+        var data = monthlyExpenses.map(item => item.expense);
+        
+        // Создаем график
+        var ctx = document.getElementById('expensesChart').getContext('2d');
+        var expensesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Расходы (₽)',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
-        }
-        else
-        {
-            <tr>
-                <td colspan="12" class="text-center text-muted">Имущество не найдено</td>
-            </tr>
-        }
-    </tbody>
-</table>
+        });
+    </script>
+}

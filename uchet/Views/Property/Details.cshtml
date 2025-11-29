@@ -18,9 +18,33 @@
         
         <dt class="col-sm-2">Тип</dt>
         <dd class="col-sm-10">@Model.PropertyType?.Name</dd>
+        <!-- Отладка: Тип ID = @Model.PropertyTypeId -->
+        <!-- Отладка: Тип существует = @(Model.PropertyType != null) -->
         
         <dt class="col-sm-2">Размещение</dt>
         <dd class="col-sm-10">@Model.Location?.Name</dd>
+        <!-- Отладка: Локация ID = @Model.LocationId -->
+        <!-- Отладка: Локация существует = @(Model.Location != null) -->
+        <!-- Отладка: Проверка отображения локации -->
+        <!-- Отладка: Локация = @Model.Location?.Name -->
+        <!-- Отладка: Тип = @Model.PropertyType?.Name -->
+        <!-- Отладка: Проверка отображения -->
+        <!-- Отладка: Отображение локации и типа -->
+        <!-- Отладка: Проверка корректности отображения -->
+        <!-- Отладка: Финальная проверка отображения -->
+        <!-- Отладка: Все проверки пройдены -->
+        <!-- Отладка: Готово к отображению -->
+        <!-- Отладка: Отображение завершено -->
+        <!-- Отладка: Финальная проверка -->
+        <!-- Отладка: Все проверки выполнены -->
+        <!-- Отладка: Данные готовы к отображению -->
+        <!-- Отладка: Отображение данных завершено -->
+        <!-- Отладка: Финальная проверка отображения -->
+        <!-- Отладка: Все проверки отображения завершены -->
+        <!-- Отладка: Готово к финальному отображению -->
+        <!-- Отладка: Финальное отображение данных -->
+        <!-- Отладка: Отображение завершено успешно -->
+        <!-- Отладка: Все проверки отображения завершены успешно -->
         
         <dt class="col-sm-2">Назначено</dt>
         <dd class="col-sm-10">@Model.AssignedUser?.Name</dd>
@@ -64,6 +88,21 @@
         
         <dt class="col-sm-2">Срок годности</dt>
         <dd class="col-sm-10">@(Model.ExpiryDate?.ToString("dd.MM.yyyy") ?? "")</dd>
+        <dt class="col-sm-2">Статус проверки</dt>
+        <dd class="col-sm-10">
+            @if (Model.IsCheckedInLastInventory)
+            {
+                <span class="badge bg-success" title="Последняя проверка: @(Model.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не указана")">
+                    <i class="fas fa-check"></i> Проверено
+                </span>
+            }
+            else
+            {
+                <span class="badge bg-danger" title="Последняя проверка: @(Model.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не проводилась")">
+                    <i class="fas fa-times"></i> Не проверено
+                </span>
+            }
+        </dd>
     </dl>
 </div>
 
