@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("uchet")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fc886d6163dfe316a283d14c1270fc2380a45e7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e1716885470a3056f95f6b727ee0f31d41587353")]
 [assembly: System.Reflection.AssemblyProductAttribute("uchet")]
 [assembly: System.Reflection.AssemblyTitleAttribute("uchet")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

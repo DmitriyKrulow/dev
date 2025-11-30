@@ -1319,7 +1319,236 @@
 
         // Функция для печати таблицы
         function printTable() {
-            window.print();
+            // Создаем клон таблицы и контейнера
+            const tableContainer = document.querySelector('.table-container');
+            const table = document.getElementById('propertyTable');
+            
+            if (!table) {
+                showAlert('Таблица не найдена', 'error');
+                return;
+            }
+
+            // Создаем новое окно для печати
+            const printWindow = window.open('', '_blank');
+            const printDate = new Date().toLocaleDateString('ru-RU');
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ru">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Учет имущества - Печать</title>
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            font-size: 12px;
+                            margin: 15px;
+                            color: #000;
+                            line-height: 1.4;
+                        }
+                        .print-header {
+                            text-align: center;
+                            margin-bottom: 15px;
+                            border-bottom: 2px solid #333;
+                            padding-bottom: 10px;
+                        }
+                        .print-header h2 {
+                            margin: 0 0 5px 0;
+                            font-size: 18px;
+                        }
+                        .print-info {
+                            margin-bottom: 15px;
+                            font-size: 11px;
+                            padding: 8px;
+                            background: #f8f9fa;
+                            border: 1px solid #dee2e6;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 9px;
+                            margin-bottom: 15px;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 3px 5px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f5f5f5;
+                            font-weight: bold;
+                        }
+                        .status-checked { 
+                            background-color: #d4edda; 
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-weight: bold;
+                        }
+                        .status-unchecked { 
+                            background-color: #f8d7da; 
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-weight: bold;
+                        }
+                        .summary {
+                            margin-top: 20px;
+                            padding-top: 10px;
+                            border-top: 2px solid #333;
+                            font-size: 11px;
+                        }
+                        .summary div {
+                            margin-bottom: 3px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2>Учет имущества</h2>
+                        <div>Отчет сформирован: ${printDate}</div>
+                    </div>
+            `);
+
+            // Добавляем информацию о фильтрах
+            const currentFilters = getCurrentFilters();
+            if (currentFilters) {
+                printWindow.document.write(`
+                    <div class="print-info">
+                        <div><strong>Примененные фильтры:</strong> ${currentFilters}</div>
+                    </div>
+                `);
+            }
+
+            // Клонируем таблицу для печати
+            const tableClone = table.cloneNode(true);
+            
+            // Удаляем ненужные колонки и элементы
+            const rows = tableClone.querySelectorAll('tr');
+            rows.forEach(row => {
+                // Удаляем колонку с чекбоксами
+                const checkboxCell = row.querySelector('th:first-child, td:first-child');
+                if (checkboxCell) checkboxCell.remove();
+                
+                // Удаляем колонку с действиями (последняя)
+                const actionsCell = row.querySelector('th:last-child, td:last-child');
+                if (actionsCell) actionsCell.remove();
+                
+                // Удаляем колонку с QR-кодами и штрих-кодами (если они скрыты)
+                const qrCell = row.querySelector('td:nth-child(5)'); // QR код
+                const barcodeCell = row.querySelector('td:nth-child(6)'); // Штрих-код
+                if (qrCell && areOptionalColumnsHidden) qrCell.remove();
+                if (barcodeCell && areOptionalColumnsHidden) barcodeCell.remove();
+                
+                // Обрабатываем ячейки статуса - заменяем на простой текст
+                const statusCell = row.querySelector('td:nth-child(13)'); // Статус проверки
+                if (statusCell) {
+                    // Получаем исходный статус из data-атрибута
+                    const status = row.getAttribute('data-status');
+                    if (status === 'True') {
+                        statusCell.innerHTML = '<span class="status-checked">Проверено</span>';
+                    } else {
+                        statusCell.innerHTML = '<span class="status-unchecked">Не проверено</span>';
+                    }
+                }
+                
+                // Обрабатываем ячейки с иконками
+                row.querySelectorAll('i.fas').forEach(icon => {
+                    const parent = icon.parentElement;
+                    if (parent) {
+                        const text = icon.className.includes('fa-check') ? '✓' : 
+                                    icon.className.includes('fa-times') ? '✗' :
+                                    icon.className.includes('fa-clock') ? '⏰' :
+                                    icon.className.includes('fa-exclamation-triangle') ? '⚠' : '';
+                        if (text) {
+                            parent.innerHTML = parent.innerHTML.replace(icon.outerHTML, text);
+                        }
+                    }
+                });
+            });
+
+            // Добавляем таблицу в окно печати
+            printWindow.document.write('<div class="table-responsive">');
+            printWindow.document.write(tableClone.outerHTML);
+            printWindow.document.write('</div>');
+
+            // Добавляем итоговую информацию
+            const totalCount = document.querySelectorAll('#tableBody tr').length;
+            const visibleCount = document.querySelectorAll('#tableBody tr').length;
+            const checkedCount = document.querySelectorAll('#tableBody tr[data-status="True"]').length;
+            const totalCost = calculateTotalCost();
+
+            printWindow.document.write(`
+                <div class="summary">
+                    <div><strong>Итого:</strong></div>
+                    <div>Всего записей: ${totalCount}</div>
+                    <div>Проверено: ${checkedCount}</div>
+                    <div>Не проверено: ${totalCount - checkedCount}</div>
+                    <div>Общая стоимость: ${totalCost} ₽</div>
+                </div>
+            `);
+
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+
+            // Даем время на загрузку контента перед печатью
+            setTimeout(() => {
+                printWindow.print();
+                // printWindow.close(); // Закомментируйте, если хотите оставить окно открытым для предпросмотра
+            }, 500);
+        }
+
+        // Вспомогательные функции для печати
+        function getCurrentFilters() {
+            const filters = [];
+            
+            // Тип имущества
+            const typeFilter = document.querySelector('select[name="propertyTypeId"]');
+            if (typeFilter && typeFilter.value) {
+                const selectedOption = typeFilter.options[typeFilter.selectedIndex];
+                filters.push(`Тип: ${selectedOption.text}`);
+            }
+            
+            // Размещение
+            const locationFilter = document.querySelector('select[name="locationId"]');
+            if (locationFilter && locationFilter.value) {
+                const selectedOption = locationFilter.options[locationFilter.selectedIndex];
+                filters.push(`Размещение: ${selectedOption.text}`);
+            }
+            
+            // Пользователь
+            const userFilter = document.querySelector('select[name="userId"]');
+            if (userFilter && userFilter.value) {
+                const selectedOption = userFilter.options[userFilter.selectedIndex];
+                filters.push(`Пользователь: ${selectedOption.text}`);
+            }
+            
+            // Поисковый запрос
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value.trim()) {
+                filters.push(`Поиск: "${searchInput.value.trim()}"`);
+            }
+            
+            return filters.length > 0 ? filters.join(', ') : 'Все записи';
+        }
+
+        function calculateTotalCost() {
+            let total = 0;
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                const costCell = row.querySelector('td:nth-child(11)'); // Колонка стоимости
+                if (costCell) {
+                    const costText = costCell.textContent.replace(/[^\d,]/g, '').replace(',', '');
+                    const cost = parseFloat(costText);
+                    if (!isNaN(cost)) {
+                        total += cost;
+                    }
+                }
+            });
+            return total.toLocaleString('ru-RU');
         }
 
         // Функция для просмотра изображений в модальном окне
