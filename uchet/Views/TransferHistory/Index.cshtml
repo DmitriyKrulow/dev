@@ -1,0 +1,60 @@
+@model List<uchet.Models.PropertyTransfer>
+@{
+    ViewData["Title"] = "История передач имущества";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6">@ViewData["Title"]</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Список передач</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Имущество</th>
+                                        <th>От кого</th>
+                                        <th>Кому</th>
+                                        <th>Дата передачи</th>
+                                        <th>Примечание</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transfer in Model)
+                                    {
+                                        <tr>
+                                            <td>@transfer.Id</td>
+                                            <td>@transfer.Property.Name</td>
+                                            <td>@transfer.FromUser.Name</td>
+                                            <td>@transfer.ToUser.Name</td>
+                                            <td>@transfer.TransferDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td>@(transfer.Notes ?? "—")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>История передач имущества отсутствует.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

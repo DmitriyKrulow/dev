@@ -4,219 +4,169 @@
     ViewData["Title"] = "Детали имущества";
 }
 
-<h2>Детали имущества</h2>
+<div class="container-fluid">
+    <h2>Детали имущества</h2>
 
-<div>
-    <h4>Имущество</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">Название</dt>
-        <dd class="col-sm-10">@Model.Name</dd>
-        
-        <dt class="col-sm-2">Описание</dt>
-        <dd class="col-sm-10">@Model.Description</dd>
-        
-        <dt class="col-sm-2">Тип</dt>
-        <dd class="col-sm-10">@Model.PropertyType?.Name</dd>
-        <!-- Отладка: Тип ID = @Model.PropertyTypeId -->
-        <!-- Отладка: Тип существует = @(Model.PropertyType != null) -->
-        
-        <dt class="col-sm-2">Размещение</dt>
-        <dd class="col-sm-10">@Model.Location?.Name</dd>
-        <!-- Отладка: Локация ID = @Model.LocationId -->
-        <!-- Отладка: Локация существует = @(Model.Location != null) -->
-        <!-- Отладка: Проверка отображения локации -->
-        <!-- Отладка: Локация = @Model.Location?.Name -->
-        <!-- Отладка: Тип = @Model.PropertyType?.Name -->
-        <!-- Отладка: Проверка отображения -->
-        <!-- Отладка: Отображение локации и типа -->
-        <!-- Отладка: Проверка корректности отображения -->
-        <!-- Отладка: Финальная проверка отображения -->
-        <!-- Отладка: Все проверки пройдены -->
-        <!-- Отладка: Готово к отображению -->
-        <!-- Отладка: Отображение завершено -->
-        <!-- Отладка: Финальная проверка -->
-        <!-- Отладка: Все проверки выполнены -->
-        <!-- Отладка: Данные готовы к отображению -->
-        <!-- Отладка: Отображение данных завершено -->
-        <!-- Отладка: Финальная проверка отображения -->
-        <!-- Отладка: Все проверки отображения завершены -->
-        <!-- Отладка: Готово к финальному отображению -->
-        <!-- Отладка: Финальное отображение данных -->
-        <!-- Отладка: Отображение завершено успешно -->
-        <!-- Отладка: Все проверки отображения завершены успешно -->
-        
-        <dt class="col-sm-2">Назначено</dt>
-        <dd class="col-sm-10">@Model.AssignedUser?.Name</dd>
-        
-        <dt class="col-sm-2">QR код</dt>
-        <dd class="col-sm-10">
-            @Model.QRCode
-            @if (!string.IsNullOrEmpty(Model.QRCode))
-            {
-                <br />
-                <img src="@Url.Action("GenerateQRCodeImage", new { id = Model.Id })" alt="QR Code" />
-            }
-        </dd>
-        
-        <dt class="col-sm-2">Штрих-код</dt>
-        <dd class="col-sm-10">
-            @Model.Barcode
-            @if (!string.IsNullOrEmpty(Model.Barcode))
-            {
-                <br />
-                <img src="@Url.Action("GenerateBarcodeImage", new { id = Model.Id })" alt="Barcode" />
-            }
-        </dd>
-        
-        <dt class="col-sm-2">Инвентарный номер</dt>
-        <dd class="col-sm-10">@Model.InventoryNumber</dd>
-        
-        <dt class="col-sm-2">Дата баланса</dt>
-        <dd class="col-sm-10">@(Model.BalanceDate?.ToString("dd.MM.yyyy") ?? "")</dd>
-        
-        <!-- Отладка: Срок использования = @Model.UsagePeriod -->
-        <dt class="col-sm-2">Срок использования</dt>
-        <dd class="col-sm-10">@(Model.UsagePeriod?.ToString() ?? "") месяцев</dd>
-        
-        <!-- Отладка: Стоимость = @Model.Cost -->
-        <dt class="col-sm-2">Стоимость</dt>
-        <dd class="col-sm-10">@(Model.Cost?.ToString("N2") ?? "")</dd>
-        
-        <dt class="col-sm-2">Дата последнего обслуживания</dt>
-        <dd class="col-sm-10">@(Model.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "")</dd>
-        
-        <dt class="col-sm-2">Срок годности</dt>
-        <dd class="col-sm-10">@(Model.ExpiryDate?.ToString("dd.MM.yyyy") ?? "")</dd>
-        <dt class="col-sm-2">Статус проверки</dt>
-        <dd class="col-sm-10">
-            @if (Model.IsCheckedInLastInventory)
-            {
-                <span class="badge bg-success" title="Последняя проверка: @(Model.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не указана")">
-                    <i class="fas fa-check"></i> Проверено
-                </span>
-            }
-            else
-            {
-                <span class="badge bg-danger" title="Последняя проверка: @(Model.LastInventoryCheckDate?.ToString("dd.MM.yyyy") ?? "Не проводилась")">
-                    <i class="fas fa-times"></i> Не проверено
-                </span>
-            }
-        </dd>
-    </dl>
-</div>
+    <!-- Сообщение об успешном сохранении -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<h4>Файлы</h4>
-@if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-{
-    <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="propertyId" value="@Model.Id" />
-        <div class="form-group">
-            <label for="file">Выберите файл:</label>
-            <input type="file" name="file" class="form-control" />
-        </div>
-        <div class="form-group">
-            <label for="fileType">Тип файла:</label>
-            <select name="fileType" class="form-control">
-                <option value="photo">Фотография</option>
-                <option value="receipt">Накладная</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <input type="submit" value="Загрузить" class="btn btn-primary" />
-        </div>
-    </form>
-}
-
-@if (Model.PropertyFiles != null && Model.PropertyFiles.Any())
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Тип файла</th>
-                <th>Файл</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var file in Model.PropertyFiles)
-            {
-                <tr>
-                    <td>@file.FileType</td>
-                    <td><a href="@file.FilePath" target="_blank">Просмотреть файл</a></td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p>Нет загруженных файлов.</p>
-}
-<!-- Добавьте эту секцию в детали имущества -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-clipboard-check"></i> Статус инвентаризации
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <strong>Статус проверки:</strong>
-                    </div>
-                    <div class="col-6">
-                        @if (Model.IsCheckedInLastInventory)
-                        {
-                            <span class="badge bg-success">
-                                <i class="fas fa-check-circle"></i> Проверено
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-danger">
-                                <i class="fas fa-times-circle"></i> Не проверено
-                            </span>
-                        }
-                    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Основная информация</h5>
                 </div>
-                @if (ViewBag.LastInventoryDate != null)
-                {
-                    <div class="row mt-2">
-                        <div class="col-6">
-                            <strong>Последняя проверка:</strong>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Название:</dt>
+                        <dd class="col-sm-9">@Model.Name</dd>
+
+                        <dt class="col-sm-3">Описание:</dt>
+                        <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Description) ? "-" : Model.Description)</dd>
+
+                        <dt class="col-sm-3">Инвентарный номер:</dt>
+                        <dd class="col-sm-9"><strong>@Model.InventoryNumber</strong></dd>
+
+                        <dt class="col-sm-3">Тип имущества:</dt>
+                        <dd class="col-sm-9">@Model.PropertyType?.Name</dd>
+
+                        <dt class="col-sm-3">Размещение:</dt>
+                        <dd class="col-sm-9">@Model.Location?.Name</dd>
+
+                        <dt class="col-sm-3">Назначенный пользователь:</dt>
+                        <dd class="col-sm-9">@(Model.AssignedUser?.Name ?? "Не назначен")</dd>
+
+                        <dt class="col-sm-3">Дата баланса:</dt>
+                        <dd class="col-sm-9">@(Model.BalanceDate?.ToString("dd.MM.yyyy") ?? "-")</dd>
+
+                        <dt class="col-sm-3">Срок использования:</dt>
+                        <dd class="col-sm-9">@(Model.UsagePeriod?.ToString() ?? "-") мес.</dd>
+
+                        <dt class="col-sm-3">Стоимость:</dt>
+                        <dd class="col-sm-9"><strong>@(Model.Cost?.ToString("N0") ?? "-") ₽</strong></dd>
+
+                        <dt class="col-sm-3">Последнее обслуживание:</dt>
+                        <dd class="col-sm-9">@(Model.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "-")</dd>
+
+                        <dt class="col-sm-3">Срок годности:</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.ExpiryDate.HasValue)
+                            {
+                                if (Model.ExpiryDate.Value < DateTime.Now)
+                                {
+                                    <span class="text-danger">
+                                        @Model.ExpiryDate.Value.ToString("dd.MM.yyyy")
+                                        <i class="fas fa-exclamation-triangle ms-1" title="Срок годности истек"></i>
+                                    </span>
+                                }
+                                else if (Model.ExpiryDate.Value < DateTime.Now.AddMonths(1))
+                                {
+                                    <span class="text-warning">
+                                        @Model.ExpiryDate.Value.ToString("dd.MM.yyyy")
+                                        <i class="fas fa-clock ms-1" title="Срок годности скоро истекает"></i>
+                                    </span>
+                                }
+                                else
+                                {
+                                    @Model.ExpiryDate.Value.ToString("dd.MM.yyyy")
+                                }
+                            }
+                            else
+                            {
+                                <text>-</text>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-3">Статус проверки:</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.IsCheckedInLastInventory)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i> Проверено
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times me-1"></i> Не проверено
+                                </span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- QR код -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">QR код</h6>
+                </div>
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.QRCode))
+                    {
+                        <img src="@Url.Action("GenerateQRCodeImage", new { id = Model.Id })" 
+                             alt="QR Code" 
+                             class="img-fluid"
+                             style="max-width: 200px;" />
+                        <div class="mt-2">
+                            <small class="text-muted">@Model.QRCode</small>
                         </div>
-                        <div class="col-6">
-                            @ViewBag.LastInventoryDate.ToString("dd.MM.yyyy HH:mm")
+                    }
+                    else
+                    {
+                        <div class="text-muted">
+                            <i class="fas fa-qrcode fa-3x mb-2"></i>
+                            <p>QR код не сгенерирован</p>
                         </div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-6">
-                            <strong>Инвентаризация:</strong>
+                    }
+                </div>
+            </div>
+
+            <!-- Штрих-код -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Штрих-код</h6>
+                </div>
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.Barcode))
+                    {
+                        <img src="@Url.Action("GenerateBarcodeImage", new { id = Model.Id })" 
+                             alt="Barcode" 
+                             class="img-fluid"
+                             style="max-width: 250px; height: 80px;" />
+                        <div class="mt-2">
+                            <small class="text-muted">@Model.Barcode</small>
                         </div>
-                        <div class="col-6">
-                            @ViewBag.LastInventoryName
+                    }
+                    else
+                    {
+                        <div class="text-muted">
+                            <i class="fas fa-barcode fa-3x mb-2"></i>
+                            <p>Штрих-код не сгенерирован</p>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="row mt-2">
-                        <div class="col-12">
-                            <span class="text-muted">Инвентаризации не проводились</span>
-                        </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div>
-    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-    {
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактировать</a>
-    }
-    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+    <div class="mt-3">
+        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i> Редактировать
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Назад к списку
+        </a>
+    </div>
 </div>

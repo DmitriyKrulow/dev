@@ -1,0 +1,791 @@
+<!-- Views/Scan/Index.cshtml -->
+@{
+    ViewData["Title"] = "Сканирование имущества";
+}
+
+<div class="container-fluid px-2 px-md-3">
+    <!-- Заголовок -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="h3 mb-1">@ViewData["Title"]</h1>
+            <p class="text-muted mb-0" id="userInfo">Загрузка информации о пользователе...</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Левая колонка - сканирование -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-2">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-qr-code-scan me-2 fs-6"></i>
+                        <span class="fs-6">Сканирование кода</span>
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <!-- Выбор камеры -->
+                    <div class="mb-3">
+                        <label for="cameraSelect" class="form-label small fw-medium">Выберите камеру:</label>
+                        <select id="cameraSelect" class="form-select form-select-sm">
+                            <option value="">Загрузка камер...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Кнопки управления сканером -->
+                    <div class="mb-3 d-grid gap-2 d-md-flex">
+                        <button id="startScanner" class="btn btn-primary btn-sm flex-fill" disabled>
+                            <i class="bi bi-camera-video me-1"></i>Начать сканирование
+                        </button>
+                        <button id="stopScanner" class="btn btn-outline-secondary btn-sm flex-fill" disabled>
+                            <i class="bi bi-stop-circle me-1"></i>Остановить
+                        </button>
+                    </div>
+
+                    <!-- Область сканирования -->
+                    <div id="qr-reader" class="border rounded bg-light" style="min-height: 250px; display: none;"></div>
+                    
+                    <!-- Ручной ввод -->
+                    <div class="mt-3">
+                        <label for="manualInput" class="form-label small fw-medium">Или введите номер вручную:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="manualInput" placeholder="Инвентарный номер">
+                            <button class="btn btn-outline-primary" type="button" id="manualScan">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка - информация и действия -->
+        <div class="col-12 col-lg-6">
+            <!-- Передача от пользователя к пользователю -->
+            <div id="transferToUser" style="display: none;">
+                <div class="card shadow-sm border-success">
+                    <div class="card-header bg-success text-white py-2">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bi bi-arrow-left-right me-2 fs-6"></i>
+                            <span class="fs-6">Передача имущества</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="transferPropertyDetails" class="small">
+                            <!-- Информация об имуществе -->
+                        </div>
+                        
+                        <div class="mt-3 pt-2 border-top">
+                            <p class="text-muted small mb-2">Имущество будет передано вам</p>
+                            <div class="d-grid">
+                                <button class="btn btn-success btn-sm" id="confirmTransferToUser">
+                                    <i class="bi bi-check-circle me-1"></i>Принять имущество
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Возврат на склад -->
+            <div id="returnToWarehouse" style="display: none;">
+                <div class="card shadow-sm border-warning">
+                    <div class="card-header bg-warning text-dark py-2">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bi bi-arrow-left-circle me-2 fs-6"></i>
+                            <span class="fs-6">Принять на склад</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="returnPropertyDetails" class="small">
+                            <!-- Информация об имуществе -->
+                        </div>
+                        
+                        <div class="mt-3 pt-2 border-top">
+                            <p class="text-muted small mb-2">Имущество будет принято на склад</p>
+                            <div class="d-grid">
+                                <button class="btn btn-warning btn-sm" id="confirmReturnToWarehouse">
+                                    <i class="bi bi-arrow-return-left me-1"></i>Принять на склад
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Имущество уже у текущего пользователя -->
+            <div id="propertyWithCurrentUser" style="display: none;">
+                <div class="card shadow-sm border-info">
+                    <div class="card-header bg-info text-white py-2">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bi bi-person-check me-2 fs-6"></i>
+                            <span class="fs-6">Имущество у вас</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="currentUserPropertyDetails" class="small">
+                            <!-- Информация об имуществе -->
+                        </div>
+                        
+                        <div class="mt-3 pt-2 border-top">
+                            <p class="text-success small mb-0">
+                                <i class="bi bi-info-circle me-1"></i>Это имущество уже закреплено за вами
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Имущество не найдено -->
+            <div id="noProperty" style="display: none;">
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-danger text-white py-2">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle me-2 fs-6"></i>
+                            <span class="fs-6">Имущество не найдено</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <p class="small mb-2">Имущество с указанным номером не найдено в системе.</p>
+                        <p class="small text-muted mb-0">Проверьте правильность ввода или обратитесь к администратору.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сканирование недоступно -->
+            <div id="scannerNotSupported" style="display: none;">
+                <div class="card shadow-sm border-dark">
+                    <div class="card-header bg-dark text-white py-2">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bi bi-exclamation-circle me-2 fs-6"></i>
+                            <span class="fs-6">Сканирование недоступно</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <p class="small mb-2">Сканирование QR-кодов недоступно в вашем браузере.</p>
+                        <p class="small text-muted mb-0">Используйте ручной ввод или обновите браузер.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        #qr-reader {
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+
+        .property-detail {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+            line-height: 1.4;
+        }
+        
+        .property-detail strong {
+            display: inline-block;
+            width: 110px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .scanner-loading {
+            color: #6c757d;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        @@media (max-width: 576px) {
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem !important;
+            }
+            
+            .property-detail strong {
+                width: 100px;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        let html5QrCode = null;
+        let currentPropertyId = null;
+        let isScannerLoaded = false;
+        let currentUserId = null;
+        let currentUserName = null;
+        let currentUserLocation = null;
+        let currentUserIsAdmin = false;
+
+        // Получение информации о текущем пользователе
+        async function getCurrentUser() {
+            try {
+                const response = await fetch('/Scan/GetCurrentUser');
+                const user = await response.json();
+                
+                if (user.id) {
+                    currentUserId = user.id;
+                    currentUserName = user.name;
+                    currentUserLocation = user.location || 'Не указана';
+                    currentUserIsAdmin = user.isAdmin || false;
+                    
+                    // Показываем информацию о пользователе в заголовке
+                    updateUserInfoInHeader();
+                } else {
+                    console.error('Не удалось получить информацию о пользователе');
+                    showAlert('Ошибка аутентификации', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка получения пользователя:', error);
+                showAlert('Ошибка получения данных пользователя', 'danger');
+            }
+        }
+
+        // Обновляем информацию о пользователе в заголовке
+        function updateUserInfoInHeader() {
+            const header = document.getElementById('userInfo');
+            if (header && currentUserName) {
+                let userInfo = `Пользователь: ${currentUserName}`;
+                if (currentUserLocation) {
+                    userInfo += ` | Локация: ${currentUserLocation}`;
+                }
+                if (currentUserIsAdmin) {
+                    userInfo += ' | Администратор';
+                }
+                header.textContent = userInfo;
+            }
+        }
+
+        // Функции для работы со сканером
+        function loadScannerLibrary() {
+            console.log('📷 Загрузка библиотеки сканера...');
+            
+            const qrReader = document.getElementById('qr-reader');
+            if (!qrReader) return;
+
+            qrReader.innerHTML = '<div class="scanner-loading"><div class="loading-spinner mb-2"></div><div>Загрузка сканера...</div></div>';
+            qrReader.style.display = 'block';
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js';
+            script.onload = function() {
+                console.log('✅ Библиотека сканера загружена');
+                isScannerLoaded = true;
+                qrReader.style.display = 'none';
+                const startBtn = document.getElementById('startScanner');
+                if (startBtn) startBtn.disabled = false;
+                initializeScanner();
+            };
+            script.onerror = function() {
+                console.error('❌ CDN недоступен');
+                qrReader.innerHTML = '<div class="scanner-loading text-danger"><i class="bi bi-x-circle me-2"></i>Не удалось загрузить сканер. Используйте ручной ввод.</div>';
+                const scannerNotSupported = document.getElementById('scannerNotSupported');
+                if (scannerNotSupported) scannerNotSupported.style.display = 'block';
+                const startBtn = document.getElementById('startScanner');
+                if (startBtn) startBtn.disabled = true;
+            };
+            
+            document.head.appendChild(script);
+        }
+
+        function initializeScanner() {
+            if (!isScannerLoaded || !window.Html5Qrcode) {
+                console.error('Библиотека сканера не загружена');
+                return;
+            }
+
+            Html5Qrcode.getCameras().then(devices => {
+                const cameraSelect = document.getElementById('cameraSelect');
+                if (!cameraSelect) return;
+
+                cameraSelect.innerHTML = '<option value="">Выберите камеру...</option>';
+                
+                if (devices && devices.length) {
+                    devices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.id;
+                        option.textContent = device.label || `Камера ${cameraSelect.children.length}`;
+                        cameraSelect.appendChild(option);
+                    });
+                    console.log('✅ Найдено камер:', devices.length);
+                } else {
+                    cameraSelect.innerHTML = '<option value="">Камеры не найдены</option>';
+                    console.warn('⚠️ Камеры не найдены');
+                    const startBtn = document.getElementById('startScanner');
+                    if (startBtn) startBtn.disabled = true;
+                }
+            }).catch(err => {
+                console.error('Ошибка получения камер:', err);
+                const cameraSelect = document.getElementById('cameraSelect');
+                if (cameraSelect) cameraSelect.innerHTML = '<option value="">Не удалось получить доступ к камерам</option>';
+                const startBtn = document.getElementById('startScanner');
+                if (startBtn) startBtn.disabled = true;
+                showAlert('Не удалось получить доступ к камерам. Используйте ручной ввод.', 'warning');
+            });
+        }
+
+        function startScanner() {
+            if (!isScannerLoaded || !window.Html5Qrcode) {
+                showAlert('Сканер не загружен', 'danger');
+                return;
+            }
+
+            const cameraSelect = document.getElementById('cameraSelect');
+            const selectedCameraId = cameraSelect ? cameraSelect.value : '';
+            
+            if (!selectedCameraId) {
+                showAlert('Пожалуйста, выберите камеру', 'warning');
+                return;
+            }
+
+            try {
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                html5QrCode.start(
+                    selectedCameraId,
+                    {
+                        fps: 10,
+                        qrbox: { width: 200, height: 200 }
+                    },
+                    onScanSuccess,
+                    onScanFailure
+                ).then(() => {
+                    const qrReader = document.getElementById('qr-reader');
+                    const startBtn = document.getElementById('startScanner');
+                    const stopBtn = document.getElementById('stopScanner');
+                    
+                    if (qrReader) qrReader.style.display = 'block';
+                    if (startBtn) startBtn.disabled = true;
+                    if (stopBtn) stopBtn.disabled = false;
+                    if (cameraSelect) cameraSelect.disabled = true;
+                    
+                    console.log('✅ Сканирование запущено');
+                }).catch(err => {
+                    console.error('Ошибка запуска сканера:', err);
+                    showAlert('Не удалось запустить сканер: ' + err.message, 'danger');
+                });
+            } catch (error) {
+                console.error('Ошибка создания сканера:', error);
+                showAlert('Ошибка создания сканера: ' + error.message, 'danger');
+            }
+        }
+
+        function stopScanner() {
+            console.log('🛑 Остановка сканирования...');
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    const qrReader = document.getElementById('qr-reader');
+                    const startBtn = document.getElementById('startScanner');
+                    const stopBtn = document.getElementById('stopScanner');
+                    const cameraSelect = document.getElementById('cameraSelect');
+                    
+                    if (qrReader) qrReader.style.display = 'none';
+                    if (startBtn) startBtn.disabled = false;
+                    if (stopBtn) stopBtn.disabled = true;
+                    if (cameraSelect) cameraSelect.disabled = false;
+                    
+                    console.log('✅ Сканирование остановлено');
+                }).catch(err => {
+                    console.error('Ошибка остановки сканера:', err);
+                    // Все равно разблокируем кнопки
+                    const startBtn = document.getElementById('startScanner');
+                    const stopBtn = document.getElementById('stopScanner');
+                    const cameraSelect = document.getElementById('cameraSelect');
+                    
+                    if (startBtn) startBtn.disabled = false;
+                    if (stopBtn) stopBtn.disabled = true;
+                    if (cameraSelect) cameraSelect.disabled = false;
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            console.log('📷 Отсканирован код:', decodedText);
+            showAlert('Код отсканирован: ' + decodedText, 'success');
+            scanProperty(decodedText);
+            setTimeout(() => stopScanner(), 1000);
+        }
+
+        function onScanFailure(error) {
+            // Игнорируем ошибки сканирования
+        }
+
+        // Основная функция поиска имущества
+        async function scanProperty(inventoryNumber) {
+            console.log('🔍 Поиск имущества:', inventoryNumber);
+            
+            const manualScanBtn = document.getElementById('manualScan');
+            if (manualScanBtn) {
+                manualScanBtn.innerHTML = '<span class="loading-spinner me-1"></span>Поиск...';
+                manualScanBtn.disabled = true;
+            }
+
+            try {
+                showAlert(`Поиск имущества: ${inventoryNumber}`, 'info');
+
+                const response = await fetch('/Scan/ScanProperty', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ 
+                        inventoryNumber: inventoryNumber 
+                    })
+                });
+
+                console.log('📡 Статус ответа:', response.status);
+                const result = await response.json();
+                console.log('📦 Результат поиска:', result);
+
+                if (result.success) {
+                    currentPropertyId = result.property.id;
+                    // Обновляем информацию о пользователе из ответа
+                    if (result.currentUser) {
+                        currentUserIsAdmin = result.currentUser.isAdmin || false;
+                    }
+                    determinePropertyAction(result.property);
+                    showAlert('✅ Имущество найдено!', 'success');
+                } else {
+                    hideAllPropertyViews();
+                    document.getElementById('noProperty').style.display = 'block';
+                    showAlert(`❌ ${result.message}`, 'danger');
+                }
+
+            } catch (error) {
+                console.error('💥 Ошибка поиска:', error);
+                showAlert('❌ Ошибка при поиске имущества', 'danger');
+            } finally {
+                if (manualScanBtn) {
+                    manualScanBtn.innerHTML = '<i class="bi bi-search"></i>';
+                    manualScanBtn.disabled = false;
+                }
+            }
+        }
+
+        // Определяем какое действие доступно для имущества
+        function determinePropertyAction(property) {
+            console.log('🎯 Определение действия для имущества:', property);
+            console.log('👤 Текущий пользователь ID:', currentUserId);
+            console.log('🏷️ Имущество назначено пользователю ID:', property.assignedUserId);
+            console.log('👑 Пользователь является админом:', currentUserIsAdmin);
+            
+            hideAllPropertyViews();
+            
+            if (!property.assignedUserId) {
+                // Имущество свободно (на складе) - можно взять
+                console.log('➡️ Показываем view для взятия имущества со склада');
+                displayTransferToUserView(property);
+            } else if (property.assignedUserId === currentUserId) {
+                // Имущество у текущего пользователя
+                console.log('👀 Показываем view для просмотра (имущество уже у пользователя)');
+                displayPropertyWithCurrentUserView(property);
+            } else {
+                // Имущество у другого пользователя
+                if (currentUserIsAdmin) {
+                    // АДМИН может принять от любого пользователя на склад
+                    console.log('⬅️ Показываем view для приема на склад от другого пользователя');
+                    displayReturnToWarehouseView(property);
+                } else {
+                    // Обычный пользователь - может только забрать у другого пользователя
+                    console.log('➡️ Показываем view для передачи от другого пользователя');
+                    displayTransferToUserView(property);
+                }
+            }
+        }
+
+        // Показать view для передачи имущества
+        function displayTransferToUserView(property) {
+            console.log('📋 Заполняем информацию для передачи имущества');
+            const transferPropertyDetails = document.getElementById('transferPropertyDetails');
+            if (transferPropertyDetails) {
+                const fromUser = property.assignedUserId ? property.currentUser : 'Склад';
+                const fromLocation = property.assignedUserId ? property.location : 'Склад';
+                const toLocation = currentUserLocation;
+                
+                transferPropertyDetails.innerHTML = `
+                    <div class="property-detail">
+                        <strong>Название:</strong> ${escapeHtml(property.name)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Инвентарный №:</strong> ${escapeHtml(property.inventoryNumber)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Тип:</strong> ${escapeHtml(property.propertyType || 'Не указан')}
+                    </div>
+                    <div class="property-detail">
+                        <strong>От пользователя:</strong> ${escapeHtml(fromUser)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>С локации:</strong> ${escapeHtml(fromLocation)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>К пользователю:</strong> ${escapeHtml(currentUserName)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>На локацию:</strong> ${escapeHtml(toLocation)} <span class="text-success">(будет обновлена)</span>
+                    </div>
+                `;
+            }
+            document.getElementById('transferToUser').style.display = 'block';
+        }
+
+        // Показать view для возврата на склад (только для админов)
+        function displayReturnToWarehouseView(property) {
+            console.log('📋 Заполняем информацию для приема на склад');
+            const returnPropertyDetails = document.getElementById('returnPropertyDetails');
+            if (returnPropertyDetails) {
+                const fromUser = property.assignedUserId ? property.currentUser : 'Неизвестно';
+                const fromLocation = property.assignedUserId ? property.location : 'Неизвестно';
+                
+                returnPropertyDetails.innerHTML = `
+                    <div class="property-detail">
+                        <strong>Название:</strong> ${escapeHtml(property.name)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Инвентарный №:</strong> ${escapeHtml(property.inventoryNumber)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Тип:</strong> ${escapeHtml(property.propertyType || 'Не указан')}
+                    </div>
+                    <div class="property-detail">
+                        <strong>От пользователя:</strong> ${escapeHtml(fromUser)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>С локации:</strong> ${escapeHtml(fromLocation)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>На склад:</strong> Принимаете вы (${escapeHtml(currentUserName)})
+                    </div>
+                    <div class="property-detail">
+                        <strong>Локация склада:</strong> ${escapeHtml(currentUserLocation)} <span class="text-success">(будет обновлена)</span>
+                    </div>
+                `;
+            }
+            document.getElementById('returnToWarehouse').style.display = 'block';
+        }
+
+        // Показать view когда имущество уже у текущего пользователя
+        function displayPropertyWithCurrentUserView(property) {
+            console.log('📋 Заполняем информацию для имущества у текущего пользователя');
+            const currentUserPropertyDetails = document.getElementById('currentUserPropertyDetails');
+            if (currentUserPropertyDetails) {
+                currentUserPropertyDetails.innerHTML = `
+                    <div class="property-detail">
+                        <strong>Название:</strong> ${escapeHtml(property.name)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Инвентарный №:</strong> ${escapeHtml(property.inventoryNumber)}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Тип:</strong> ${escapeHtml(property.propertyType || 'Не указан')}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Локация:</strong> ${escapeHtml(property.location || 'Не указана')}
+                    </div>
+                    <div class="property-detail">
+                        <strong>Статус:</strong> <span class="badge bg-success">Закреплено за вами</span>
+                    </div>
+                `;
+            }
+            document.getElementById('propertyWithCurrentUser').style.display = 'block';
+        }
+
+        // Скрыть все view имущества
+        function hideAllPropertyViews() {
+            console.log('👻 Скрываем все view имущества');
+            const views = [
+                'transferToUser', 'returnToWarehouse', 'propertyWithCurrentUser',
+                'noProperty', 'scannerNotSupported'
+            ];
+            views.forEach(view => {
+                const element = document.getElementById(view);
+                if (element) element.style.display = 'none';
+            });
+        }
+
+        // Принять имущество (от другого пользователя или со склада)
+        async function transferToUser() {
+            console.log('✅ Взятие имущества в использование, ID:', currentPropertyId);
+            
+            if (!currentPropertyId) {
+                showAlert('Имущество не выбрано', 'danger');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/Scan/TransferToUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        propertyId: currentPropertyId
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('📦 Результат передачи:', result);
+                
+                if (result.success) {
+                    showAlert('✅ ' + result.message, 'success');
+                    hideAllPropertyViews();
+                    document.getElementById('manualInput').value = '';
+                } else {
+                    showAlert(`❌ ${result.message}`, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка передачи имущества:', error);
+                showAlert('❌ Ошибка при передаче имущества', 'danger');
+            }
+        }
+
+        // Вернуть имущество на склад (только для админов)
+        async function returnToWarehouse() {
+            console.log('🏭 Прием имущества на склад, ID:', currentPropertyId);
+            
+            if (!currentPropertyId) {
+                showAlert('Имущество не выбрано', 'danger');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/Scan/ReturnToWarehouse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        propertyId: currentPropertyId
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('📦 Результат приема на склад:', result);
+                
+                if (result.success) {
+                    showAlert('🏭 ' + result.message, 'success');
+                    hideAllPropertyViews();
+                    document.getElementById('manualInput').value = '';
+                } else {
+                    showAlert(`❌ ${result.message}`, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка приема на склад:', error);
+                showAlert('❌ Ошибка при приеме имущества на склад', 'danger');
+            }
+        }
+
+        function manualScan() {
+            const manualInput = document.getElementById('manualInput');
+            const inventoryNumber = manualInput?.value.trim();
+            
+            if (!inventoryNumber) {
+                showAlert('Введите инвентарный номер', 'warning');
+                return;
+            }
+            
+            console.log('🖱️ Ручной поиск:', inventoryNumber);
+            scanProperty(inventoryNumber);
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getAntiForgeryToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (!token) {
+                console.error('❌ Anti forgery token не найден!');
+            }
+            return token || '';
+        }
+
+        function showAlert(message, type) {
+            // Удаляем существующие уведомления
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            });
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+            }
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Инициализация страницы сканирования');
+            
+            getCurrentUser().then(() => {
+                console.log('🔧 Настройка обработчиков событий...');
+                
+                // Привязка событий
+                document.getElementById('startScanner').addEventListener('click', startScanner);
+                document.getElementById('stopScanner').addEventListener('click', stopScanner);
+                document.getElementById('manualScan').addEventListener('click', manualScan);
+                document.getElementById('confirmTransferToUser').addEventListener('click', transferToUser);
+                document.getElementById('confirmReturnToWarehouse').addEventListener('click', returnToWarehouse);
+                
+                document.getElementById('manualInput').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        console.log('⌨️ Нажата клавиша Enter');
+                        manualScan();
+                    }
+                });
+
+                loadScannerLibrary();
+                
+                console.log('🎉 Все обработчики событий установлены');
+            });
+        });
+    </script>
+}

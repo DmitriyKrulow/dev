@@ -201,15 +201,27 @@
                 <div class="col-md-6">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">Действия</span>
-                        <button class="btn btn-outline-warning" type="button" onclick="bulkMarkChecked()">
-                            <i class="fas fa-check"></i> Проверено
-                        </button>
-                        <button class="btn btn-outline-danger" type="button" onclick="bulkMarkUnchecked()">
-                            <i class="fas fa-times"></i> Не проверено
-                        </button>
                         @if (User.IsInRole("Admin"))
                         {
+                            <button class="btn btn-outline-warning" type="button" onclick="bulkMarkChecked()">
+                                <i class="fas fa-check"></i> Проверено
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" onclick="bulkMarkUnchecked()">
+                                <i class="fas fa-times"></i> Не проверено
+                            </button>
                             <button class="btn btn-outline-danger" type="button" onclick="bulkDelete()" title="Удалить выбранные записи">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary" type="button" disabled title="Только для администраторов">
+                                <i class="fas fa-check"></i> Проверено
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" disabled title="Только для администраторов">
+                                <i class="fas fa-times"></i> Не проверено
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" disabled title="Только для администраторов">
                                 <i class="fas fa-trash"></i> Удалить
                             </button>
                         }
@@ -498,12 +510,56 @@
             </button>
         </div>
     </div>
+        <!-- Модальное окно для просмотра изображений -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контейнер для алертов -->
+    <div id="alertContainer"></div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" style="display: none;"></div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     
     <script>
+        // Глобальная переменная для отслеживания состояния колонок
+        let areOptionalColumnsHidden = false;
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded - initializing optional columns');
+            updateExpiringCount();
+            
+            // Проверяем сохраненное состояние колонок
+            areOptionalColumnsHidden = localStorage.getItem('optionalColumnsHidden') === 'true';
+            console.log('Loaded from localStorage:', areOptionalColumnsHidden);
+            
+            const optionalCells = document.querySelectorAll('th.optional-column, td.optional-column');
+            console.log('Optional cells found on init:', optionalCells.length);
+            
+            // Применяем сохраненное состояние
+            optionalCells.forEach(cell => {
+                cell.style.display = areOptionalColumnsHidden ? 'none' : '';
+            });
+            
+            // Обновляем кнопку
+            updateToggleButton();
+        });
+
         // Функции экспорта
         function showExportSettings() {
             const modal = new bootstrap.Modal(document.getElementById('exportSettingsModal'));
@@ -627,7 +683,6 @@
             };
         }
 
-        // Обновленная функция showLoading
         function showLoading(show, message = 'Загрузка...') {
             let loading = document.getElementById('loadingOverlay');
             if (!loading && show) {
@@ -984,6 +1039,139 @@
             }
         }
 
+        // Массовое изменение статуса проверки
+        function bulkMarkChecked() {
+            const selectedIds = [];
+            document.querySelectorAll('.row-selector:checked').forEach(cb => {
+                const row = cb.closest('tr');
+                selectedIds.push(parseInt(row.getAttribute('data-id')));
+            });
+            
+            if (selectedIds.length === 0) {
+                showAlert('Выберите записи для выполнения операции', 'warning');
+                return;
+            }
+            
+            if (confirm(`Отметить проверенными ${selectedIds.length} записей?`)) {
+                showLoading(true, 'Обновление статуса проверки...');
+                
+                fetch('/Property/BulkUpdateCheckStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        ids: selectedIds,
+                        isChecked: true
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка сервера');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        // Обновляем отображение статуса в таблице
+                        selectedIds.forEach(id => {
+                            const row = document.querySelector(`tr[data-id="${id}"]`);
+                            if (row) {
+                                row.setAttribute('data-status', 'True');
+                                const statusCell = row.querySelector('td:nth-child(14)');
+                                if (statusCell) {
+                                    statusCell.innerHTML = '<span class="badge bg-success"><i class="fas fa-check me-1"></i> Проверено</span>';
+                                }
+                            }
+                        });
+                        updateStatusCounts();
+                    } else {
+                        throw new Error(data.message || 'Ошибка при обновлении статуса');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Ошибка при обновлении статуса проверки', 'error');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+            }
+        }
+
+        function bulkMarkUnchecked() {
+            const selectedIds = [];
+            document.querySelectorAll('.row-selector:checked').forEach(cb => {
+                const row = cb.closest('tr');
+                selectedIds.push(parseInt(row.getAttribute('data-id')));
+            });
+            
+            if (selectedIds.length === 0) {
+                showAlert('Выберите записи для выполнения операции', 'warning');
+                return;
+            }
+            
+            if (confirm(`Отметить не проверенными ${selectedIds.length} записей?`)) {
+                showLoading(true, 'Обновление статуса проверки...');
+                
+                fetch('/Property/BulkUpdateCheckStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        ids: selectedIds,
+                        isChecked: false
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка сервера');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        // Обновляем отображение статуса в таблице
+                        selectedIds.forEach(id => {
+                            const row = document.querySelector(`tr[data-id="${id}"]`);
+                            if (row) {
+                                row.setAttribute('data-status', 'False');
+                                const statusCell = row.querySelector('td:nth-child(14)');
+                                if (statusCell) {
+                                    statusCell.innerHTML = '<span class="badge bg-danger"><i class="fas fa-times me-1"></i> Не проверено</span>';
+                                }
+                            }
+                        });
+                        updateStatusCounts();
+                    } else {
+                        throw new Error(data.message || 'Ошибка при обновлении статуса');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Ошибка при обновлении статуса проверки', 'error');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+            }
+        }
+
+        function updateStatusCounts() {
+            const totalRows = document.querySelectorAll('#tableBody tr').length;
+            const checkedCount = document.querySelectorAll('#tableBody tr[data-status="True"]').length;
+            const uncheckedCount = totalRows - checkedCount;
+            
+            // Обновляем статусную панель
+            document.querySelector('.status-card.bg-success .fw-bold').textContent = checkedCount;
+            document.querySelector('.status-card.bg-danger .fw-bold').textContent = uncheckedCount;
+        }
+
         // Вспомогательные функции
         function showAlert(message, type = 'info') {
             let alertContainer = document.getElementById('alertContainer');
@@ -1027,40 +1215,6 @@
         function updateTotalCount() {
             const totalRows = document.querySelectorAll('#tableBody tr').length;
             document.getElementById('totalCount').textContent = totalRows;
-        }
-
-        function bulkMarkChecked() {
-            const selectedIds = [];
-            document.querySelectorAll('.row-selector:checked').forEach(cb => {
-                const row = cb.closest('tr');
-                selectedIds.push(row.getAttribute('data-id'));
-            });
-            
-            if (selectedIds.length > 0) {
-                if (confirm(`Отметить проверенными ${selectedIds.length} записей?`)) {
-                    console.log('Mark as checked:', selectedIds);
-                    alert(`Отмечено проверенными: ${selectedIds.length} записей`);
-                }
-            } else {
-                alert('Выберите записи для выполнения операции');
-            }
-        }
-
-        function bulkMarkUnchecked() {
-            const selectedIds = [];
-            document.querySelectorAll('.row-selector:checked').forEach(cb => {
-                const row = cb.closest('tr');
-                selectedIds.push(row.getAttribute('data-id'));
-            });
-            
-            if (selectedIds.length > 0) {
-                if (confirm(`Отметить не проверенными ${selectedIds.length} записей?`)) {
-                    console.log('Mark as unchecked:', selectedIds);
-                    alert(`Отмечено не проверенными: ${selectedIds.length} записей`);
-                }
-            } else {
-                alert('Выберите записи для выполнения операции');
-            }
         }
 
         // Сортировка
@@ -1118,10 +1272,7 @@
             console.log('Page size changed to:', newSize);
         }
 
-        // Глобальная переменная для отслеживания состояния колонок
-        let areOptionalColumnsHidden = false;
-
-        // Управление колонками - ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ ФУНКЦИЯ
+        // Управление колонками
         function toggleOptionalColumns() {
             console.log('toggleOptionalColumns called, current state:', areOptionalColumnsHidden);
             
@@ -1166,134 +1317,18 @@
             }
         }
 
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded - initializing optional columns');
-            updateExpiringCount();
-            
-            // Проверяем сохраненное состояние колонок
-            areOptionalColumnsHidden = localStorage.getItem('optionalColumnsHidden') === 'true';
-            console.log('Loaded from localStorage:', areOptionalColumnsHidden);
-            
-            const optionalCells = document.querySelectorAll('th.optional-column, td.optional-column');
-            console.log('Optional cells found on init:', optionalCells.length);
-            
-            // Применяем сохраненное состояние
-            optionalCells.forEach(cell => {
-                cell.style.display = areOptionalColumnsHidden ? 'none' : '';
-            });
-            
-            // Обновляем кнопку
-            updateToggleButton();
-            
-            // Автоматически скрываем на мобильных устройствах
-            if (window.innerWidth < 768 && !localStorage.getItem('optionalColumnsHidden')) {
-                console.log('Auto-hiding on mobile');
-                areOptionalColumnsHidden = true;
-                optionalCells.forEach(cell => {
-                    cell.style.display = 'none';
-                });
-                localStorage.setItem('optionalColumnsHidden', 'true');
-                updateToggleButton();
-            }
-        });
+        // Функция для печати таблицы
+        function printTable() {
+            window.print();
+        }
+
+        // Функция для просмотра изображений в модальном окне
+        function showImageModal(imageUrl, title) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('imageModalTitle').textContent = title;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
     </script>
-
-    <style>
-        .status-card {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            min-width: 100px;
-            text-align: center;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(0, 0, 0, 0.075);
-        }
-        
-        .sticky-top {
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .bg-warning {
-            background-color: #ffc107 !important;
-            padding: 0.1rem 0.2rem;
-            border-radius: 0.2rem;
-        }
-        
-        .table-container {
-            max-height: calc(100vh - 400px);
-            overflow-y: auto;
-            margin-bottom: 1rem;
-        }
-        
-        .table-sm th,
-        .table-sm td {
-            padding: 0.4rem;
-            vertical-align: middle;
-        }
-        
-        .btn-group-sm > .btn {
-            padding: 0.25rem 0.4rem;
-        }
-        
-        @@media (max-width: 768px) {
-            .table-container {
-                max-height: calc(100vh - 350px);
-            }
-            
-            .optional-column {
-                display: none;
-            }
-            
-            .btn-group .btn {
-                padding: 0.2rem 0.3rem;
-            }
-            
-            .table-responsive {
-                font-size: 0.8rem;
-            }
-            
-            .form-check-inline {
-                margin-right: 0.5rem;
-                margin-bottom: 0.5rem;
-            }
-            
-            .status-card {
-                min-width: 80px;
-                padding: 0.4rem 0.6rem;
-            }
-        }
-        
-        .text-danger {
-            font-weight: bold;
-        }
-        
-        .text-warning {
-            font-weight: bold;
-        }
-
-        .alert {
-            min-width: 300px;
-            margin-bottom: 0.5rem;
-        }
-
-        #loadingOverlay {
-            backdrop-filter: blur(2px);
-        }
-
-        tr.selected-for-delete {
-            background-color: #ffe6e6 !important;
-        }
-
-        .row-selector:checked + td {
-            background-color: #fff3cd;
-        }
-    </style>
 }
 
 @functions {

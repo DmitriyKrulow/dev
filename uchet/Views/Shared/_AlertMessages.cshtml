@@ -1,0 +1,35 @@
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i>
+        <div class="flex-grow-1">@TempData["Success"]</div>
+        <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+        <div class="flex-grow-1">@TempData["Error"]</div>
+        <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-circle-fill me-2 flex-shrink-0"></i>
+        <div class="flex-grow-1">@TempData["Warning"]</div>
+        <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle-fill me-2 flex-shrink-0"></i>
+        <div class="flex-grow-1">@TempData["Message"]</div>
+        <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert"></button>
+    </div>
+}

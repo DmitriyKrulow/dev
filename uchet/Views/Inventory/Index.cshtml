@@ -4,6 +4,9 @@
     ViewData["Title"] = "Инвентаризации";
 }
 
+<!-- Добавляем ссылку на Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <h2>Инвентаризации</h2>
 
 <p>
@@ -223,4 +226,83 @@
             <a asp-action="Create" class="btn btn-primary">Создать инвентаризацию</a>
         }
     </div>
+}
+
+@section Scripts {
+    <script>
+        // Инициализация Bootstrap компонентов после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Инициализация Bootstrap компонентов...');
+            
+            // Инициализация всех модальных окон
+            var modals = document.querySelectorAll('.modal');
+            modals.forEach(function(modal) {
+                console.log('Найдено модальное окно:', modal.id);
+            });
+            
+            // Инициализация всех выпадающих списков
+            var dropdowns = document.querySelectorAll('.dropdown-toggle');
+            dropdowns.forEach(function(dropdown) {
+                console.log('Найден выпадающий список:', dropdown);
+            });
+            
+            // Инициализация всех аккордеонов
+            var accordionButtons = document.querySelectorAll('.accordion-button');
+            accordionButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    console.log('Клик по аккордеону:', this.textContent);
+                    var target = document.querySelector(this.getAttribute('data-bs-target'));
+                    if (target) {
+                        target.classList.toggle('show');
+                    }
+                });
+            });
+            
+            // Инициализация всех вкладок
+            var tabButtons = document.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]');
+            tabButtons.forEach(function(tab) {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var target = document.querySelector(this.getAttribute('data-bs-target'));
+                    if (target) {
+                        // Скрываем все вкладки
+                        var allTabs = document.querySelectorAll('.tab-pane');
+                        allTabs.forEach(function(tabPane) {
+                            tabPane.classList.remove('show', 'active');
+                        });
+                        
+                        // Убираем активность со всех кнопок вкладок
+                        var allTabButtons = document.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]');
+                        allTabButtons.forEach(function(tabBtn) {
+                            tabBtn.classList.remove('active');
+                        });
+                        
+                        // Активируем текущую вкладку и кнопку
+                        target.classList.add('show', 'active');
+                        this.classList.add('active');
+                        
+                        console.log('Активирована вкладка:', target.id);
+                    }
+                });
+            });
+            
+            console.log('Bootstrap компоненты инициализированы');
+        });
+        
+        // Функция для ручного переключения вкладок (если нужно вызывать из кода)
+        function showTab(tabId) {
+            var tabButton = document.querySelector('[data-bs-target="#' + tabId + '"]');
+            if (tabButton) {
+                tabButton.click();
+            }
+        }
+        
+        // Функция для ручного переключения аккордеона
+        function toggleAccordion(accordionId) {
+            var accordionButton = document.querySelector('[data-bs-target="#' + accordionId + '"]');
+            if (accordionButton) {
+                accordionButton.click();
+            }
+        }
+    </script>
 }
