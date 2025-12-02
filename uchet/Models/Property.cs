@@ -51,5 +51,9 @@ namespace uchet.Models
         public DateTime? LastInventoryCheckDate { get; set; }
         
         public bool IsCheckedInLastInventory { get; set; } = false;
+
+                // Новые навигационные свойства
+        public virtual ICollection<PropertyTransfer> TransferHistory { get; set; }
+        public virtual ICollection<MaintenanceRequest> MaintenanceHistory { get; set; }
     }
 }

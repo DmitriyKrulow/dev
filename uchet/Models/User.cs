@@ -29,5 +29,11 @@ namespace uchet.Models
         public Role Role { get; set; }
         
         public Location Location { get; set; }
+
+                // Новые навигационные свойства
+        public virtual ICollection<PropertyTransfer> TransfersAsSender { get; set; }
+        public virtual ICollection<PropertyTransfer> TransfersAsReceiver { get; set; }
+        public virtual ICollection<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public virtual ICollection<Property> Properties { get; set; }
     }
 }

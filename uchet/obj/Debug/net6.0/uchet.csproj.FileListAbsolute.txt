@@ -1,0 +1,10 @@
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.csproj.AssemblyReference.cache
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\rpswa.dswa.cache.json
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.AssemblyInfoInputs.cache
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.AssemblyInfo.cs
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.csproj.CoreCompileInputs.cache
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.RazorAssemblyInfo.cache
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.RazorAssemblyInfo.cs
+C:\Users\kdw\Desktop\proekt\dev\uchet\obj\Debug\net6.0\uchet.sourcelink.json

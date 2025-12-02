@@ -21,11 +21,12 @@ namespace uchet.Data
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
         
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.ConfigureWarnings(warnings =>
-                warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
-        }
+        // Новые DbSet
+        public DbSet<PropertyTransfer> PropertyTransfers { get; set; }
+        public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+
+        public DbSet<TransferHistory> TransferHistories { get; set; }
+        //public DbSet<Maintenance> Maintenances { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,7 +65,7 @@ namespace uchet.Data
             // Настройка связи между Property и User (назначение)
             modelBuilder.Entity<Property>()
                 .HasOne(p => p.AssignedUser)
-                .WithMany()
+                .WithMany(u => u.Properties)
                 .HasForeignKey(p => p.AssignedUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
@@ -85,6 +86,67 @@ namespace uchet.Data
                 .HasOne(ii => ii.Property)
                 .WithMany()
                 .HasForeignKey(ii => ii.PropertyId);
+
+            // НОВЫЕ КОНФИГУРАЦИИ - исправленные версии
+
+            // Настройка связи для PropertyTransfer
+            modelBuilder.Entity<PropertyTransfer>()
+                .HasOne(pt => pt.Property)
+                .WithMany(p => p.TransferHistory)
+                .HasForeignKey(pt => pt.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PropertyTransfer>()
+                .HasOne(pt => pt.FromUser)
+                .WithMany(u => u.TransfersAsSender)
+                .HasForeignKey(pt => pt.FromUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PropertyTransfer>()
+                .HasOne(pt => pt.ToUser)
+                .WithMany(u => u.TransfersAsReceiver)
+                .HasForeignKey(pt => pt.ToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Настройка связи для MaintenanceRequest
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(mr => mr.Property)
+                .WithMany(p => p.MaintenanceHistory)
+                .HasForeignKey(mr => mr.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(mr => mr.RequestedBy)
+                .WithMany(u => u.MaintenanceRequests)
+                .HasForeignKey(mr => mr.RequestedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(mr => mr.AssignedTo)
+                .WithMany()
+                .HasForeignKey(mr => mr.AssignedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Конфигурации для TransferHistory
+            modelBuilder.Entity<TransferHistory>()
+                .HasOne(th => th.Property)
+                .WithMany()
+                .HasForeignKey(th => th.PropertyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TransferHistory>()
+                .HasOne(th => th.FromUser)
+                .WithMany()
+                .HasForeignKey(th => th.FromUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TransferHistory>()
+                .HasOne(th => th.ToUser)
+                .WithMany()
+                .HasForeignKey(th => th.ToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
 
             // Добавляем тестовые данные
             modelBuilder.Entity<Role>().HasData(

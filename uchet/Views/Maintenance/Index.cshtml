@@ -1,0 +1,771 @@
+@model List<uchet.Models.MaintenanceRequest>
+@{
+    ViewData["Title"] = "Управление заявками на обслуживание";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6">@ViewData["Title"]</h1>
+            <p class="text-muted" id="userRoleInfo"></p>
+        </div>
+    </div>
+
+    <!-- Кнопка создания новой заявки -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createRequestModal" id="createRequestBtn">
+                <i class="bi bi-plus-circle me-2"></i>Подать заявку на ремонт
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>@Model.Count(m => m.Status == uchet.Models.MaintenanceStatus.Requested)</h4>
+                                    <p class="mb-0">Новые заявки</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h4>@Model.Count(m => m.Status == uchet.Models.MaintenanceStatus.InProgress)</h4>
+                                    <p class="mb-0">В работе</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4>@Model.Count(m => m.Status == uchet.Models.MaintenanceStatus.Completed)</h4>
+                                    <p class="mb-0">Завершено</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body text-center">
+                                    <h4>@Model.Count</h4>
+                                    <p class="mb-0">Всего заявок</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Список заявок</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Имущество</th>
+                                        <th>Кто подал</th>
+                                        <th>Описание</th>
+                                        <th>Дата подачи</th>
+                                        <th>Статус</th>
+                                        <th>Исполнитель</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var request in Model)
+                                    {
+                                        <tr>
+                                            <td>@request.Id</td>
+                                            <td>@request.Property.Name</td>
+                                            <td>@request.RequestedBy.Name</td>
+                                            <td>
+                                                <span title="@request.Description">
+                                                    @(request.Description.Length > 50 ? request.Description.Substring(0, 50) + "..." : request.Description)
+                                                </span>
+                                            </td>
+                                            <td>@request.RequestDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(request.Status)">
+                                                    @GetStatusText(request.Status)
+                                                </span>
+                                            </td>
+                                            <td>@(request.AssignedTo?.Name ?? "Не назначен")</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    @if (User.IsInRole("Admin") && request.Status == uchet.Models.MaintenanceStatus.Requested)
+                                                    {
+                                                        <button class="btn btn-outline-primary assign-btn" 
+                                                                data-request-id="@request.Id" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#assignModal"
+                                                                title="Назначить исполнителя">
+                                                            <i class="bi bi-person-check"></i>
+                                                        </button>
+                                                    }
+                                                    @if ((User.IsInRole("Admin") || User.IsInRole("Manager")) && request.Status == uchet.Models.MaintenanceStatus.InProgress)
+                                                    {
+                                                        <button class="btn btn-outline-success complete-btn" 
+                                                                data-request-id="@request.Id" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#completeModal"
+                                                                title="Завершить заявку">
+                                                            <i class="bi bi-check-circle"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-outline-info details-btn" 
+                                                            data-request-id="@request.Id"
+                                                            title="Подробности">
+                                                        <i class="bi bi-info-circle"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            @if (User.IsInRole("User"))
+                            {
+                                <text>У вас пока нет заявок на обслуживание. Нажмите "Подать заявку на ремонт" чтобы создать первую заявку.</text>
+                            }
+                            else
+                            {
+                                <text>Заявки на обслуживание отсутствуют.</text>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания заявки -->
+<div class="modal fade" id="createRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подача заявки на ремонт</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="propertySelect" class="form-label">Выберите имущество:</label>
+                    <select id="propertySelect" class="form-select">
+                        <option value="">Загрузка имущества...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="requestDescription" class="form-label">Описание проблемы:</label>
+                    <textarea id="requestDescription" class="form-control" rows="4" placeholder="Опишите проблему, требующую ремонта..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" id="confirmCreateRequest">Подать заявку</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно назначения исполнителя -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Назначение исполнителя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="assignUserSelect" class="form-label">Выберите исполнителя:</label>
+                    <select id="assignUserSelect" class="form-select">
+                        <option value="">Загрузка пользователей...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmAssign">Назначить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно завершения заявки -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Завершение заявки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="resolutionNotes" class="form-label">Описание выполненных работ:</label>
+                    <textarea id="resolutionNotes" class="form-control" rows="4" placeholder="Опишите выполненные работы и решение проблемы..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" id="confirmComplete">Завершить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentRequestId = null;
+        let currentUserId = null;
+        let currentUserRole = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentUserInfo();
+            
+            // Обработчики для кнопок назначения
+            document.querySelectorAll('.assign-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentRequestId = this.getAttribute('data-request-id');
+                    console.log('Выбрана заявка для назначения:', currentRequestId);
+                    checkRequestExists(currentRequestId);
+                });
+            });
+            
+            // Обработчики для кнопок завершения
+            document.querySelectorAll('.complete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentRequestId = this.getAttribute('data-request-id');
+                    console.log('Выбрана заявка для завершения:', currentRequestId);
+                    checkRequestExists(currentRequestId);
+                });
+            });
+            
+            // Обработчики для кнопок подтверждения
+            document.getElementById('confirmAssign').addEventListener('click', confirmAssign);
+            document.getElementById('confirmComplete').addEventListener('click', confirmComplete);
+            document.getElementById('confirmCreateRequest').addEventListener('click', confirmCreateRequest);
+            
+            // Обработчики для кнопок деталей
+            document.querySelectorAll('.details-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const requestId = this.getAttribute('data-request-id');
+                    console.log('Просмотр деталей заявки:', requestId);
+                    showRequestDetails(requestId);
+                });
+            });
+
+            // Загружаем имущество при открытии модального окна
+            $('#createRequestModal').on('show.bs.modal', function () {
+                if (currentUserId) {
+                    loadAvailableProperties();
+                } else {
+                    console.log('ID пользователя еще не загружен, ожидаем...');
+                    setTimeout(() => {
+                        if (currentUserId) {
+                            loadAvailableProperties();
+                        }
+                    }, 500);
+                }
+            });
+
+            // Загружаем пользователей при открытии модального окна назначения
+            $('#assignModal').on('show.bs.modal', function () {
+                if (currentUserRole === 'Admin') {
+                    loadAvailableUsers();
+                }
+            });
+        });
+
+        // Загрузка информации о текущем пользователе
+        async function loadCurrentUserInfo() {
+            try {
+                console.log('Загрузка информации о текущем пользователе...');
+                
+                // Загружаем ID пользователя
+                const userIdResponse = await fetch('@Url.Action("GetCurrentUserId", "Maintenance")');
+                const userIdResult = await userIdResponse.json();
+                currentUserId = userIdResult.userId;
+                console.log('Текущий пользователь ID:', currentUserId);
+
+                // Загружаем роль пользователя
+                const roleResponse = await fetch('@Url.Action("GetCurrentUserRole", "Maintenance")');
+                const roleResult = await roleResponse.json();
+                currentUserRole = roleResult.role;
+                console.log('Текущая роль пользователя:', currentUserRole);
+
+                // Обновляем интерфейс в зависимости от роли
+                updateUIForUserRole();
+
+            } catch (error) {
+                console.error('Ошибка загрузки информации о пользователе:', error);
+            }
+        }
+
+        // Обновление интерфейса в зависимости от роли пользователя
+        function updateUIForUserRole() {
+            const userRoleInfo = document.getElementById('userRoleInfo');
+            const createRequestBtn = document.getElementById('createRequestBtn');
+            const assignButtons = document.querySelectorAll('.assign-btn');
+            const completeButtons = document.querySelectorAll('.complete-btn');
+
+            // Отображаем информацию о роли
+            let roleText = '';
+            switch(currentUserRole) {
+                case 'Admin':
+                    roleText = 'Вы вошли как Администратор. У вас есть полный доступ ко всем заявкам.';
+                    break;
+                case 'Manager':
+                    roleText = 'Вы вошли как Менеджер. Вы видите заявки, назначенные вам, и можете их завершать.';
+                    break;
+                case 'User':
+                    roleText = 'Вы вошли как Пользователь. Вы видите только свои заявки и их статус.';
+                    break;
+                default:
+                    roleText = 'Роль не определена.';
+            }
+            userRoleInfo.textContent = roleText;
+
+            // Скрываем/показываем кнопки в зависимости от роли
+            if (currentUserRole === 'User') {
+                // Пользователь может только создавать заявки и просматривать детали
+                assignButtons.forEach(btn => btn.style.display = 'none');
+                completeButtons.forEach(btn => btn.style.display = 'none');
+            } else if (currentUserRole === 'Manager') {
+                // Менеджер может завершать заявки, но не назначать
+                assignButtons.forEach(btn => btn.style.display = 'none');
+            }
+            // Админ видит все кнопки
+        }
+
+        // Проверка существования заявки
+        async function checkRequestExists(requestId) {
+            try {
+                console.log('Проверка существования заявки:', requestId);
+                const response = await fetch(`@Url.Action("CheckRequestExists", "Maintenance")?requestId=${requestId}`);
+                const result = await response.json();
+                console.log('Результат проверки заявки:', result);
+                
+                if (result.success && !result.exists) {
+                    console.warn('Заявка не существует в базе данных:', requestId);
+                    showAlert('Заявка не найдена в системе', 'warning');
+                }
+            } catch (error) {
+                console.error('Ошибка проверки заявки:', error);
+            }
+        }
+
+        // Загрузка доступных пользователей (только для админа)
+        async function loadAvailableUsers() {
+            try {
+                if (currentUserRole !== 'Admin') {
+                    console.log('Загрузка пользователей доступна только для администратора');
+                    return;
+                }
+
+                console.log('Загрузка доступных пользователей...');
+                const response = await fetch('@Url.Action("GetAvailableUsers", "Maintenance")');
+                const users = await response.json();
+                console.log('Загружены пользователи:', users);
+                
+                const userSelect = document.getElementById('assignUserSelect');
+                userSelect.innerHTML = '<option value="">Выберите исполнителя...</option>';
+                
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    userSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                showAlert('Ошибка загрузки пользователей', 'danger');
+            }
+        }
+
+        // Загрузка доступного имущества (только закрепленного за пользователем)
+        async function loadAvailableProperties() {
+            try {
+                console.log('Загрузка доступного имущества для пользователя:', currentUserId);
+                const response = await fetch('@Url.Action("GetAvailableProperties", "Maintenance")');
+                const result = await response.json();
+                
+                if (result.success === false) {
+                    console.error('Ошибка сервера при загрузке имущества:', result.message);
+                    showAlert('Ошибка загрузки имущества: ' + result.message, 'danger');
+                    return;
+                }
+
+                const properties = result;
+                console.log('Загружено имущество:', properties);
+                
+                const propertySelect = document.getElementById('propertySelect');
+                propertySelect.innerHTML = '<option value="">Выберите имущество...</option>';
+                
+                if (properties.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'У вас нет закрепленного имущества';
+                    option.disabled = true;
+                    propertySelect.appendChild(option);
+                    console.log('У пользователя нет закрепленного имущества');
+                    showAlert('У вас нет закрепленного имущества для подачи заявки', 'info');
+                } else {
+                    properties.forEach(property => {
+                        const option = document.createElement('option');
+                        option.value = property.id;
+                        option.textContent = `${property.name} (${property.inventoryNumber})`;
+                        propertySelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки имущества:', error);
+                showAlert('Ошибка загрузки имущества: ' + error.message, 'danger');
+            }
+        }
+
+        // Подтверждение создания заявки
+        async function confirmCreateRequest() {
+            const propertySelect = document.getElementById('propertySelect');
+            const description = document.getElementById('requestDescription').value;
+            const propertyId = propertySelect.value;
+            
+            if (!propertyId) {
+                showAlert('Выберите имущество', 'warning');
+                return;
+            }
+            
+            if (!description.trim()) {
+                showAlert('Введите описание проблемы', 'warning');
+                return;
+            }
+            
+            try {
+                console.log('Создание заявки:', { propertyId, description });
+                
+                const response = await fetch('@Url.Action("CreateRequest", "Maintenance")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        propertyId: parseInt(propertyId),
+                        description: description
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Результат создания заявки:', result);
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    $('#createRequestModal').modal('hide');
+                    // Очищаем форму
+                    document.getElementById('requestDescription').value = '';
+                    propertySelect.value = '';
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка создания заявки:', error);
+                showAlert('Ошибка при создании заявки: ' + error.message, 'danger');
+            }
+        }
+
+        // Подтверждение назначения
+        async function confirmAssign() {
+            const userSelect = document.getElementById('assignUserSelect');
+            const assignedToUserId = userSelect.value;
+            
+            if (!assignedToUserId) {
+                showAlert('Выберите исполнителя', 'warning');
+                return;
+            }
+            
+            if (!currentRequestId) {
+                showAlert('Заявка не выбрана', 'danger');
+                return;
+            }
+            
+            console.log('Назначение заявки:', {
+                requestId: currentRequestId,
+                assignedToUserId: assignedToUserId
+            });
+            
+            try {
+                const response = await fetch('@Url.Action("AssignRequest", "Maintenance")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        requestId: parseInt(currentRequestId),
+                        assignedToUserId: parseInt(assignedToUserId)
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Результат назначения:', result);
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    $('#assignModal').modal('hide');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка назначения:', error);
+                showAlert('Ошибка при назначении исполнителя: ' + error.message, 'danger');
+            }
+        }
+
+        // Подтверждение завершения
+        async function confirmComplete() {
+            const resolutionNotes = document.getElementById('resolutionNotes').value;
+            
+            if (!resolutionNotes.trim()) {
+                showAlert('Введите описание выполненных работ', 'warning');
+                return;
+            }
+            
+            if (!currentRequestId) {
+                showAlert('Заявка не выбрана', 'danger');
+                return;
+            }
+            
+            console.log('Завершение заявки:', {
+                requestId: currentRequestId,
+                resolutionNotes: resolutionNotes
+            });
+            
+            try {
+                const response = await fetch('@Url.Action("CompleteRequest", "Maintenance")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        requestId: parseInt(currentRequestId),
+                        resolutionNotes: resolutionNotes
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Результат завершения:', result);
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    $('#completeModal').modal('hide');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка завершения:', error);
+                showAlert('Ошибка при завершении заявки: ' + error.message, 'danger');
+            }
+        }
+
+        // Функция для показа деталей заявки
+        async function showRequestDetails(requestId) {
+            try {
+                console.log('Загрузка деталей заявки:', requestId);
+                const response = await fetch(`@Url.Action("GetRequestDetails", "Maintenance")?requestId=${requestId}`);
+                const result = await response.json();
+                console.log('Результат загрузки деталей:', result);
+                
+                if (result.success) {
+                    const request = result.request;
+                    const detailsHtml = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>ID заявки:</strong> ${request.id}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Статус:</strong> <span class="badge ${getStatusBadgeClass(request.status)}">${getStatusText(request.status)}</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>Имущество:</strong> ${request.propertyName}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Кто подал:</strong> ${request.requestedByName}
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>Исполнитель:</strong> ${request.assignedToName || 'Не назначен'}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Дата подачи:</strong> ${request.requestDate}
+                            </div>
+                        </div>
+                        ${request.assignedDate ? `
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>Дата назначения:</strong> ${request.assignedDate}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${request.completionDate ? `
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>Дата завершения:</strong> ${request.completionDate}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <strong>Описание проблемы:</strong>
+                                <p class="mt-1">${request.description}</p>
+                            </div>
+                        </div>
+                        ${request.resolutionNotes ? `
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <strong>Выполненные работы:</strong>
+                                <p class="mt-1">${request.resolutionNotes}</p>
+                            </div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    // Показываем модальное окно с деталями
+                    showDetailsModal('Детали заявки', detailsHtml);
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки деталей:', error);
+                showAlert('Ошибка при загрузке деталей заявки: ' + error.message, 'danger');
+            }
+        }
+
+        // Функция для показа модального окна с деталями
+        function showDetailsModal(title, content) {
+            const modalHtml = `
+                <div class="modal fade" id="detailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">${title}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${content}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Удаляем предыдущее модальное окно если есть
+            const existingModal = document.getElementById('detailsModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Добавляем новое модальное окно
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Показываем модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            modal.show();
+        }
+
+        // Вспомогательные функции для статусов
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'Requested': return 'bg-primary';
+                case 'InProgress': return 'bg-warning';
+                case 'Completed': return 'bg-success';
+                case 'Cancelled': return 'bg-secondary';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'Requested': return 'Подана';
+                case 'InProgress': return 'В работе';
+                case 'Completed': return 'Завершена';
+                case 'Cancelled': return 'Отменена';
+                default: return status;
+            }
+        }
+
+        // Вспомогательная функция для показа уведомлений
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+}
+
+@functions {
+    public string GetStatusBadgeClass(uchet.Models.MaintenanceStatus status)
+    {
+        return status switch
+        {
+            uchet.Models.MaintenanceStatus.Requested => "bg-primary",
+            uchet.Models.MaintenanceStatus.InProgress => "bg-warning",
+            uchet.Models.MaintenanceStatus.Completed => "bg-success",
+            uchet.Models.MaintenanceStatus.Cancelled => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+    
+    public string GetStatusText(uchet.Models.MaintenanceStatus status)
+    {
+        return status switch
+        {
+            uchet.Models.MaintenanceStatus.Requested => "Подана",
+            uchet.Models.MaintenanceStatus.InProgress => "В работе",
+            uchet.Models.MaintenanceStatus.Completed => "Завершена",
+            uchet.Models.MaintenanceStatus.Cancelled => "Отменена",
+            _ => status.ToString()
+        };
+    }
+}

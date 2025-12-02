@@ -9,10 +9,17 @@
     <p><a href="@Url.Action("DownloadImportTemplate", "Property")" class="btn btn-success">Скачать шаблон Excel</a></p>
 </div>
 
-@if (TempData["Message"] != null)
+html
+@if (TempData["ImportErrors"] != null)
 {
-    <div class="alert alert-info">
-        @TempData["Message"]
+    <div class="alert alert-danger">
+        <h5>Ошибки импорта:</h5>
+        <ul>
+            @foreach (var error in TempData["ImportErrors"] as List<string> ?? new List<string>())
+            {
+                <li>@error</li>
+            }
+        </ul>
     </div>
 }
 
