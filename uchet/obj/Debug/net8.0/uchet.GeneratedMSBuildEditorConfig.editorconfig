@@ -11,137 +11,137 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = uchet
 build_property.RootNamespace = uchet
-build_property.ProjectDir = C:\Users\kdw\Desktop\proekt\dev\uchet\
+build_property.ProjectDir = C:\Users\uvm60\Desktop\prod\dev\uchet\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\kdw\Desktop\proekt\dev\uchet
+build_property.MSBuildProjectDirectory = C:\Users\uvm60\Desktop\prod\dev\uchet
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Account/ChangePassword.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Account/ChangePassword.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxDaGFuZ2VQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Account/Login.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Admin/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Admin/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Admin/Reference.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Admin/Reference.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUmVmZXJlbmNlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Admin/RoleManagement.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Admin/RoleManagement.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUm9sZU1hbmFnZW1lbnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Home/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Home/Privacy.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Inventory/Create.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Inventory/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Inventory/Details.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Inventory/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XERldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Inventory/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Inventory/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Inventory/Scan.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Inventory/Scan.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XFNjYW4uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Maintenance/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Maintenance/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWFpbnRlbmFuY2VcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Create.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Delete.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcRGVsZXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Details.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Edit.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Import.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Import.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcSW1wb3J0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/PrintBarcodes.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/PrintBarcodes.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcUHJpbnRCYXJjb2Rlcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Property/PrintQRCodes.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Property/PrintQRCodes.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvcGVydHlcUHJpbnRRUkNvZGVzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Scan/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Scan/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2NhblxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Shared/Error.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Shared/_AlertMessages.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Shared/_AlertMessages.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BbGVydE1lc3NhZ2VzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Shared/_ValidationScriptsPartial.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Tag/Create.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Tag/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFnXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Tag/Edit.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Tag/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFnXEVkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Tag/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Tag/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFnXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/TransferHistory/Index.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/TransferHistory/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVHJhbnNmZXJIaXN0b3J5XEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/_ViewImports.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/_ViewStart.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/kdw/Desktop/proekt/dev/uchet/Views/Shared/_Layout.cshtml]
+[C:/Users/uvm60/Desktop/prod/dev/uchet/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-voqrq1xc2o

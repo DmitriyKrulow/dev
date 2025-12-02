@@ -533,8 +533,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    
+   
     <script>
         // Глобальная переменная для отслеживания состояния колонок
         let areOptionalColumnsHidden = false;
@@ -1492,13 +1491,13 @@
                 </div>
             `);
 
-            printWindow.document.write('</body></html>');
+            printWindow.document.write('');
             printWindow.document.close();
 
             // Даем время на загрузку контента перед печатью
             setTimeout(() => {
                 printWindow.print();
-                // printWindow.close(); // Закомментируйте, если хотите оставить окно открытым для предпросмотра
+                printWindow.close(); // Закомментируйте, если хотите оставить окно открытым для предпросмотра
             }, 500);
         }
 
@@ -1557,7 +1556,10 @@
             document.getElementById('imageModalTitle').textContent = title;
             new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
+
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 }
 
 @functions {
