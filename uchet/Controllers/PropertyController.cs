@@ -1092,12 +1092,13 @@ namespace uchet.Controllers
             decimal? cost = null;
             if (!string.IsNullOrWhiteSpace(costStr))
             {
-                if (!decimal.TryParse(costStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out var c))
+                if (!decimal.TryParse(costStr, NumberStyles.Currency, new CultureInfo("ru-RU"), out var c))
                 {
                     throw new InvalidOperationException($"Невозможно распознать стоимость: '{costStr}'");
                 }
                 cost = c;
             }
+
 
             // --- Проверка справочников ---
             Console.WriteLine($">>> Ищем в propertyTypes: ключи = [{string.Join(", ", propertyTypes.Keys)}]");

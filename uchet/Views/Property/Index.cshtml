@@ -1,4 +1,5 @@
 @model IEnumerable<uchet.Models.Property>
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Учет имущества";
@@ -29,7 +30,9 @@
                 </div>
                 <div class="status-card bg-info text-white">
                     <small>Общая стоимость</small>
-                    <div class="fw-bold">@(Model.Where(x => x.Cost.HasValue).Sum(x => x.Cost)?.ToString("N0") ?? "0") ₽</div>
+                    <div class="fw-bold">
+                        @(Model.Where(x => x.Cost.HasValue).Sum(x => x.Cost)?.ToString("N2", new CultureInfo("ru-RU")) ?? "0,00") ₽
+                    </div>
                 </div>
             </div>
         </div>
@@ -371,7 +374,7 @@
                     @foreach (var item in Model)
                     {
                         <tr data-id="@item.Id" data-name="@item.Name?.ToLower()" data-inventory="@item.InventoryNumber?.ToLower()"
-                            data-cost="@item.Cost" data-date="@(item.BalanceDate?.ToString("yyyyMMdd") ?? "")"
+                            data-cost="@item.Cost?.ToString("F", new CultureInfo("en-US"))" data-date="@(item.BalanceDate?.ToString("yyyyMMdd") ?? "")"
                             data-status="@item.IsCheckedInLastInventory" data-expiry="@item.ExpiryDate?.ToString("yyyyMMdd")">
                             <td>
                                 <input type="checkbox" class="row-selector" onchange="updateSelectionCount()">
@@ -419,7 +422,9 @@
                             <td><strong>@item.InventoryNumber</strong></td>
                             <td class="optional-column">@(item.BalanceDate?.ToString("dd.MM.yyyy") ?? "-")</td>
                             <td class="optional-column">@(item.UsagePeriod?.ToString() ?? "-") мес.</td>
-                            <td><strong>@(item.Cost?.ToString("N0") ?? "-") ₽</strong></td>
+                            <td><strong data-cost="@item.Cost?.ToString("F", new CultureInfo("en-US"))">
+                                @(item.Cost?.ToString("N2", new CultureInfo("ru-RU")) ?? "-") ₽
+                            </strong></td>
                             <td class="optional-column">@(item.LastMaintenanceDate?.ToString("dd.MM.yyyy") ?? "-")</td>
                             <td class="optional-column">
                                 @if (item.ExpiryDate.HasValue)
@@ -510,7 +515,8 @@
             </button>
         </div>
     </div>
-        <!-- Модальное окно для просмотра изображений -->
+    
+    <!-- Модальное окно для просмотра изображений -->
     <div class="modal fade" id="imageModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -533,7 +539,6 @@
 </div>
 
 @section Scripts {
-   
     <script>
         // Глобальная переменная для отслеживания состояния колонок
         let areOptionalColumnsHidden = false;
@@ -673,7 +678,7 @@
                 location: row.querySelector('td:nth-child(4)')?.textContent.trim() || '',
                 user: row.querySelector('td:nth-child(5)')?.textContent.trim() || '',
                 inventory: row.querySelector('td:nth-child(8)')?.textContent.trim() || '',
-                cost: row.querySelector('td:nth-child(11)')?.textContent.trim() || '',
+                cost: row.getAttribute('data-cost') || '',
                 balanceDate: row.querySelector('td:nth-child(9)')?.textContent.trim() || '',
                 usagePeriod: row.querySelector('td:nth-child(10)')?.textContent.trim() || '',
                 maintenance: row.querySelector('td:nth-child(12)')?.textContent.trim() || '',
@@ -1383,18 +1388,6 @@
                             background-color: #f5f5f5;
                             font-weight: bold;
                         }
-                        .status-checked { 
-                            background-color: #d4edda; 
-                            padding: 2px 6px;
-                            border-radius: 3px;
-                            font-weight: bold;
-                        }
-                        .status-unchecked { 
-                            background-color: #f8d7da; 
-                            padding: 2px 6px;
-                            border-radius: 3px;
-                            font-weight: bold;
-                        }
                         .summary {
                             margin-top: 20px;
                             padding-top: 10px;
@@ -1426,7 +1419,27 @@
             // Клонируем таблицу для печати
             const tableClone = table.cloneNode(true);
             
-            // Удаляем ненужные колонки и элементы
+            // УДАЛЯЕМ ВСЕ ИКОНКИ (fa-check, fa-times и др.)
+            tableClone.querySelectorAll('i').forEach(el => el.remove());
+            
+            // Удаляем изображения (QR и штрих-коды)
+            tableClone.querySelectorAll('img').forEach(img => {
+                const placeholder = document.createElement('span');
+                placeholder.style.fontSize = '9px';
+                placeholder.style.backgroundColor = '#eee';
+                placeholder.style.padding = '2px 4px';
+                placeholder.style.borderRadius = '3px';
+                if (img.src.includes('GenerateQRCodeImage')) {
+                    placeholder.textContent = 'QR';
+                } else if (img.src.includes('GenerateBarcodeImage')) {
+                    placeholder.textContent = 'ШК';
+                } else {
+                    placeholder.textContent = '—';
+                }
+                img.replaceWith(placeholder);
+            });
+
+            // Обрабатываем строки таблицы
             const rows = tableClone.querySelectorAll('tr');
             rows.forEach(row => {
                 // Удаляем колонку с чекбоксами
@@ -1437,37 +1450,39 @@
                 const actionsCell = row.querySelector('th:last-child, td:last-child');
                 if (actionsCell) actionsCell.remove();
                 
-                // Удаляем колонку с QR-кодами и штрих-кодами (если они скрыты)
-                const qrCell = row.querySelector('td:nth-child(5)'); // QR код
-                const barcodeCell = row.querySelector('td:nth-child(6)'); // Штрих-код
-                if (qrCell && areOptionalColumnsHidden) qrCell.remove();
-                if (barcodeCell && areOptionalColumnsHidden) barcodeCell.remove();
-                
-                // Обрабатываем ячейки статуса - заменяем на простой текст
-                const statusCell = row.querySelector('td:nth-child(13)'); // Статус проверки
+                // Удаляем QR и штрих-код (если скрыты)
+                const qrCell = row.querySelector('td:nth-child(5)');
+                const barcodeCell = row.querySelector('td:nth-child(6)');
+                if (qrCell) qrCell.remove();
+                if (barcodeCell) barcodeCell.remove();
+
+                // Обрабатываем ячейку статуса — заменяем на текст
+                const statusCell = row.querySelector('td:nth-child(11)'); // После удаления 3 колонок: было 14 → стало 11
                 if (statusCell) {
-                    // Получаем исходный статус из data-атрибута
                     const status = row.getAttribute('data-status');
                     if (status === 'True') {
-                        statusCell.innerHTML = '<span class="status-checked">Проверено</span>';
+                        statusCell.innerHTML = 'Проверено';
+                        statusCell.style.backgroundColor = '#d4edda';
+                        statusCell.style.color = '#155724';
+                        statusCell.style.padding = '2px 6px';
+                        statusCell.style.borderRadius = '3px';
+                        statusCell.style.fontWeight = 'bold';
+                        statusCell.style.textAlign = 'center';
+                        statusCell.style.fontSize = '9px';
                     } else {
-                        statusCell.innerHTML = '<span class="status-unchecked">Не проверено</span>';
+                        statusCell.innerHTML = 'Не проверено';
+                        statusCell.style.backgroundColor = '#f8d7da';
+                        statusCell.style.color = '#721c24';
+                        statusCell.style.padding = '2px 6px';
+                        statusCell.style.borderRadius = '3px';
+                        statusCell.style.fontWeight = 'bold';
+                        statusCell.style.textAlign = 'center';
+                        statusCell.style.fontSize = '9px';
                     }
                 }
-                
-                // Обрабатываем ячейки с иконками
-                row.querySelectorAll('i.fas').forEach(icon => {
-                    const parent = icon.parentElement;
-                    if (parent) {
-                        const text = icon.className.includes('fa-check') ? '✓' : 
-                                    icon.className.includes('fa-times') ? '✗' :
-                                    icon.className.includes('fa-clock') ? '⏰' :
-                                    icon.className.includes('fa-exclamation-triangle') ? '⚠' : '';
-                        if (text) {
-                            parent.innerHTML = parent.innerHTML.replace(icon.outerHTML, text);
-                        }
-                    }
-                });
+
+                // Убираем подсказки (title)
+                row.querySelectorAll('[title]').forEach(el => el.removeAttribute('title'));
             });
 
             // Добавляем таблицу в окно печати
@@ -1477,7 +1492,6 @@
 
             // Добавляем итоговую информацию
             const totalCount = document.querySelectorAll('#tableBody tr').length;
-            const visibleCount = document.querySelectorAll('#tableBody tr').length;
             const checkedCount = document.querySelectorAll('#tableBody tr[data-status="True"]').length;
             const totalCost = calculateTotalCost();
 
@@ -1491,15 +1505,16 @@
                 </div>
             `);
 
-            printWindow.document.write('');
+            printWindow.document.write('</body></html>');
             printWindow.document.close();
 
             // Даем время на загрузку контента перед печатью
             setTimeout(() => {
                 printWindow.print();
-                printWindow.close(); // Закомментируйте, если хотите оставить окно открытым для предпросмотра
+                // printWindow.close(); // Раскомментируйте, чтобы закрыть окно после печати
             }, 500);
         }
+
 
         // Вспомогательные функции для печати
         function getCurrentFilters() {
@@ -1538,16 +1553,11 @@
         function calculateTotalCost() {
             let total = 0;
             document.querySelectorAll('#tableBody tr').forEach(row => {
-                const costCell = row.querySelector('td:nth-child(11)'); // Колонка стоимости
-                if (costCell) {
-                    const costText = costCell.textContent.replace(/[^\d,]/g, '').replace(',', '');
-                    const cost = parseFloat(costText);
-                    if (!isNaN(cost)) {
-                        total += cost;
-                    }
-                }
+                const rawCost = row.getAttribute('data-cost');
+                const cost = parseFloat(rawCost) || 0;
+                total += cost;
             });
-            return total.toLocaleString('ru-RU');
+            return total.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         // Функция для просмотра изображений в модальном окне
@@ -1556,9 +1566,7 @@
             document.getElementById('imageModalTitle').textContent = title;
             new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
-
     </script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 }
 
