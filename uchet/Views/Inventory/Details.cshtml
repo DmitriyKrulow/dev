@@ -95,12 +95,15 @@
     @if (!Model.IsCompleted)
     {
         <a asp-action="Scan" asp-route-id="@Model.Id" class="btn btn-success">Сканировать имущество</a>
-        <form asp-action="Complete" asp-route-id="@Model.Id" method="post" style="display: inline;">
-            <button type="submit" class="btn btn-warning" 
-                    onclick="return confirm('Вы уверены, что хотите завершить инвентаризацию?')">
-                Завершить инвентаризацию
-            </button>
-        </form>
+        @if (User.IsInRole("Admin"))
+        {
+            <form asp-action="Complete" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-warning"
+                        onclick="return confirm('Вы уверены, что хотите завершить инвентаризацию?')">
+                    Завершить инвентаризацию
+                </button>
+            </form>
+        }
     }
     <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
 </div>

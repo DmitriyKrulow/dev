@@ -1,4 +1,6 @@
 ﻿@model uchet.Models.DashboardViewModel
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Общая информация";
@@ -10,24 +12,26 @@
     <!-- Карточки с основными метриками -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Общее количество имущества</h5>
                     <p class="card-text display-4">@Model.TotalPropertyCount</p>
+                    <p class="card-text">Общая стоимость: @Model.TotalPropertyCost.ToString("C")</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Требует ремонта</h5>
                     <p class="card-text display-4">@Model.ExpiredPropertyCount</p>
+                    <p class="card-text">Стоимость: @Model.ExpiredPropertyCost.ToString("C")</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-danger">
-                <div class="card-body">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Требует списания</h5>
                     <p class="card-text display-4">@Model.WriteOffPropertyCount</p>
                 </div>
@@ -35,52 +39,147 @@
         </div>
     </div>
     
-    <!-- Графики -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Расходы по месяцам</h5>
+    <!-- Графики (только для Admin и Manager) -->
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Поступления имущества по месяцам</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="acquisitionsChart" width="400" height="300"></canvas>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="expensesChart" width="400" height="100"></canvas>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Статус проверки имущества</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="inventoryStatusChart" width="300" height="300"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script>
-        // Получаем данные из модели
-        var monthlyExpenses = @Html.Raw(Json.Serialize(Model.MonthlyExpenses));
+        // Проверяем, есть ли элементы графиков на странице
+        var acquisitionsChartElement = document.getElementById('acquisitionsChart');
+        var inventoryStatusChartElement = document.getElementById('inventoryStatusChart');
         
-        // Подготавливаем данные для графика
-        var labels = monthlyExpenses.map(item => item.month);
-        var data = monthlyExpenses.map(item => item.expense);
-        
-        // Создаем график
-        var ctx = document.getElementById('expensesChart').getContext('2d');
-        var expensesChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Расходы (₽)',
-                    data: data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        // График поступлений имущества по месяцам (только если элемент существует)
+        if (acquisitionsChartElement) {
+            var monthlyAcquisitions = @Html.Raw(Json.Serialize(Model.MonthlyAcquisitions));
+            var acquisitionLabels = monthlyAcquisitions.map(item => item.month);
+            var acquisitionCountData = monthlyAcquisitions.map(item => item.count);
+            var acquisitionCostData = monthlyAcquisitions.map(item => item.totalCost);
+            
+            var ctx1 = acquisitionsChartElement.getContext('2d');
+            var acquisitionsChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: acquisitionLabels,
+                    datasets: [
+                        {
+                            label: 'Количество',
+                            data: acquisitionCountData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Стоимость (₽)',
+                            data: acquisitionCostData,
+                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left'
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+        
+        // Круговая диаграмма статуса проверки имущества (только если элемент существует)
+        if (inventoryStatusChartElement) {
+            var checkedCount = @Model.CheckedPropertyCount;
+            var uncheckedCount = @Model.UncheckedPropertyCount;
+            
+            var ctx2 = inventoryStatusChartElement.getContext('2d');
+            var inventoryStatusChart = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: ['Проверено', 'Не проверено'],
+                    datasets: [{
+                        data: [checkedCount, uncheckedCount],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Статус проверки имущества',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true
+                    }
+                }
+            });
+        }
     </script>
 }

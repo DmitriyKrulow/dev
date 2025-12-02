@@ -30,7 +30,7 @@ namespace uchet.Controllers
         }
 
         /// <summary>
-        /// Возвращает представление главной страницы с данными информационной панели.
+        /// Возвращает представление главной странице с данными информационной панели.
         /// Данные включают общее количество имущества, количество имущества с истёкшим сроком годности,
         /// имущество, подлежащее списанию, а также статистику расходов по месяцам.
         /// </summary>
@@ -43,31 +43,41 @@ namespace uchet.Controllers
                 // Общее количество имущества
                 TotalPropertyCount = _context.Properties.Count(),
                 
-                // Количество имущества, требующего ремонта (с истекшим сроком годности)
+                // Общая стоимость всего имущества
+                TotalPropertyCost = _context.Properties.Sum(p => p.Cost ?? 0),
+                
+                // Количество и стоимость имущества, требующего ремонта (с истекшим сроком годности)
                 ExpiredPropertyCount = _context.Properties
                     .Where(p => p.ExpiryDate < DateTime.UtcNow && p.ExpiryDate.HasValue)
                     .Count(),
+                ExpiredPropertyCost = _context.Properties
+                    .Where(p => p.ExpiryDate < DateTime.UtcNow && p.ExpiryDate.HasValue)
+                    .Sum(p => p.Cost ?? 0),
                 
                 // Количество имущества, требующего списания (например, с истекшим сроком более 6 месяцев)
                 WriteOffPropertyCount = _context.Properties
                     .Where(p => p.ExpiryDate < DateTime.UtcNow.AddMonths(-6) && p.ExpiryDate.HasValue)
                     .Count(),
                 
-                // Данные для графика расходов по месяцам (пример за последние 12 месяцев)
-                MonthlyExpenses = GetMonthlyExpenses()
+                // Данные для графика поступлений имущества по месяцам
+                MonthlyAcquisitions = GetMonthlyAcquisitions(),
+                
+                // Данные для круговой диаграммы проверенного/непроверенного имущества
+                CheckedPropertyCount = _context.Properties.Count(p => p.IsCheckedInLastInventory),
+                UncheckedPropertyCount = _context.Properties.Count(p => !p.IsCheckedInLastInventory)
             };
             
             return View(dashboardModel);
         }
         
         /// <summary>
-        /// Возвращает список расходов по месяцам за последние 12 месяцев.
-        /// Каждая запись содержит название месяца и сумму затрат на приобретение имущества в этом месяце.
+        /// Возвращает список поступлений имущества по месяцам за последние 12 месяцев.
+        /// Каждая запись содержит название месяца, количество поступившего имущества и общую стоимость.
         /// </summary>
-        /// <returns>Список объектов <see cref="MonthlyExpense"/>, представляющих расходы по месяцам.</returns>
-        private List<MonthlyExpense> GetMonthlyExpenses()
+        /// <returns>Список объектов <see cref="MonthlyAcquisition"/>, представляющих поступления по месяцам.</returns>
+        private List<MonthlyAcquisition> GetMonthlyAcquisitions()
         {
-            var expenses = new List<MonthlyExpense>();
+            var acquisitions = new List<MonthlyAcquisition>();
             
             // Получаем данные за последние 12 месяцев
             for (int i = 11; i >= 0; i--)
@@ -75,21 +85,28 @@ namespace uchet.Controllers
                 var date = DateTime.UtcNow.AddMonths(-i);
                 var monthName = date.ToString("MMM yyyy");
                 
-                // Суммируем стоимость имущества, приобретенного в этот месяц
-                var expense = _context.Properties
+                // Подсчитываем количество имущества, поступившего в этот месяц
+                var count = _context.Properties
+                    .Count(p => p.BalanceDate.HasValue && 
+                               p.BalanceDate.Value.Year == date.Year && 
+                               p.BalanceDate.Value.Month == date.Month);
+                
+                // Суммируем стоимость имущества, поступившего в этот месяц
+                var totalCost = _context.Properties
                     .Where(p => p.BalanceDate.HasValue && 
                                p.BalanceDate.Value.Year == date.Year && 
                                p.BalanceDate.Value.Month == date.Month)
                     .Sum(p => p.Cost ?? 0);
                 
-                expenses.Add(new MonthlyExpense 
+                acquisitions.Add(new MonthlyAcquisition 
                 { 
                     Month = monthName, 
-                    Expense = expense 
+                    Count = count,
+                    TotalCost = totalCost
                 });
             }
             
-            return expenses;
+            return acquisitions;
         }
 
         /// <summary>
