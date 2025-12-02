@@ -13,6 +13,7 @@ using ClosedXML.Excel;
 using uchet.Services;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Globalization;
 
 namespace uchet.Controllers
 {
@@ -651,6 +652,18 @@ namespace uchet.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult ExportData([FromBody] ExportRequest request)
         {
+                // 🔥 Вот сюда вставляем:
+            Console.WriteLine(">>> ExportData вызван");
+
+            // Чтобы увидеть, пришли ли данные:
+            if (request == null)
+            {
+                Console.WriteLine(">>> Ошибка: request равен null");
+                return BadRequest(new { error = "Данные не получены" });
+            }
+
+            Console.WriteLine($">>> Файл: {request.FileName}, Колонки: {string.Join(", ", request.Columns ?? new List<string>())}");
+            Console.WriteLine($">>> Количество строк данных: {request.Data?.Count}");
             try
             {
                 var columnMappings = new Dictionary<string, string>
@@ -726,28 +739,53 @@ namespace uchet.Controllers
             public string Format { get; set; }
             public string FileName { get; set; }
         }
-        
+//---
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Import(IFormFile file)
         {
-            if (file == null || file.Length == 0)
+            Console.WriteLine(">>> Import вызван");
+
+            if (file == null)
             {
+                Console.WriteLine(">>> Ошибка: файл не выбран");
                 ModelState.AddModelError("", "Выберите файл для загрузки");
                 return View();
             }
 
-            if (file.Length > 10 * 1024 * 1024)
+            Console.WriteLine($">>> Загружен файл: {file.FileName ?? "null"}, размер: {file.Length}");
+
+            if (file.Length == 0)
             {
-                ModelState.AddModelError("", "Файл слишком большой. Максимальный размер: 10MB");
+                Console.WriteLine(">>> Ошибка: файл пустой");
+                ModelState.AddModelError("", "Файл пустой. Нечего импортировать.");
                 return View();
             }
 
-            var extension = Path.GetExtension(file.FileName).ToLower();
+            if (file.Length > 10 * 1024 * 1024) // 10 МБ
+            {
+                Console.WriteLine(">>> Ошибка: файл слишком большой");
+                ModelState.AddModelError("", "Файл слишком большой. Максимальный размер: 10 МБ");
+                return View();
+            }
+
+            // --- Проверка расширения ---
+            var fileName = file.FileName?.Trim();
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Console.WriteLine(">>> Ошибка: имя файла пустое или null");
+                ModelState.AddModelError("", "Имя файла не указано или повреждено");
+                return View();
+            }
+
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            Console.WriteLine($">>> Расширение файла: '{extension}'");
+
             if (extension != ".xlsx" && extension != ".xls")
             {
-                ModelState.AddModelError("", "Пожалуйста, выберите файл Excel (.xlsx или .xls)");
+                Console.WriteLine(">>> Ошибка: неверное расширение файла");
+                ModelState.AddModelError("", "Поддерживаются только файлы Excel: .xlsx или .xls");
                 return View();
             }
 
@@ -756,78 +794,107 @@ namespace uchet.Controllers
 
             try
             {
-                var propertyTypes = await _context.PropertyTypes.ToDictionaryAsync(pt => pt.Name, pt => pt.Id);
-                var locations = await _context.Locations.ToDictionaryAsync(l => l.Name, l => l.Id);
-                var users = await _context.Users.Where(u => u.IsActive).ToDictionaryAsync(u => u.Name, u => u.Id);
+                Console.WriteLine(">>> Загружаем справочники из БД...");
+
+                var propertyTypes = await _context.PropertyTypes
+                    .ToDictionaryAsync(pt => pt.Name.Trim(), pt => pt.Id);
+                Console.WriteLine($">>> Загружено PropertyTypes: {propertyTypes.Count}");
+
+                var locations = await _context.Locations
+                    .ToDictionaryAsync(l => l.Name.Trim(), l => l.Id);
+                Console.WriteLine($">>> Загружено Locations: {locations.Count}");
+
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .ToDictionaryAsync(u => u.Name.Trim(), u => u.Id);
+                Console.WriteLine($">>> Загружено активных Users: {users.Count}");
 
                 using (var stream = new MemoryStream())
                 {
+                    Console.WriteLine(">>> Копируем файл в MemoryStream...");
                     await file.CopyToAsync(stream);
+                    Console.WriteLine($">>> Копирование завершено. Размер в памяти: {stream.Length} байт");
+
+                    if (stream.Length == 0)
+                    {
+                        Console.WriteLine(">>> Ошибка: MemoryStream пустой");
+                        ModelState.AddModelError("", "Ошибка чтения файла: пустой поток");
+                        return View();
+                    }
+
+                    stream.Position = 0; // Важно: сбросить позицию
 
                     using (var workbook = new XLWorkbook(stream))
                     {
-                        var worksheet = workbook.Worksheet(1);
-                        var rows = worksheet.RowsUsed().Skip(1).ToList();
+                        Console.WriteLine($">>> Excel-файл открыт. Количество листов: {workbook.Worksheets.Count()}");
 
-                        if (rows.Count > 1000)
+                        var worksheet = workbook.Worksheet(1);
+                        if (worksheet == null)
                         {
-                            rows = rows.Take(1000).ToList();
-                            errors.Add("Обработаны только первые 1000 строк файла");
+                            Console.WriteLine(">>> Ошибка: не удалось получить первый лист");
+                            errors.Add("Файл не содержит ни одного листа");
+                            TempData["ImportErrors"] = errors;
+                            TempData["Message"] = "Импорт не выполнен: нет данных";
+                            return RedirectToAction("Index");
                         }
 
-                        var propertiesToAdd = new List<Property>();
-                        
-                        var inventoryNumbersInFile = rows.Select(r => r.Cell(3).Value.ToString().Trim()).ToList();
+                        Console.WriteLine($">>> Активный лист: '{worksheet.Name}'");
+
+                        var rows = worksheet.RowsUsed().ToList();
+                        Console.WriteLine($">>> Всего строк с данными: {rows.Count}");
+
+                        if (rows.Count < 2)
+                        {
+                            Console.WriteLine(">>> Ошибка: нет данных для импорта (только заголовки или пусто)");
+                            errors.Add("Файл не содержит данных для импорта");
+                            TempData["ImportErrors"] = errors;
+                            TempData["Message"] = "Импорт не выполнен: файл пустой";
+                            return RedirectToAction("Index");
+                        }
+
+                        // Пропускаем первую строку (заголовки)
+                        var dataRows = rows.Skip(1).ToList();
+                        Console.WriteLine($">>> Строк для импорта: {dataRows.Count}");
+
+                        var inventoryNumbersInFile = dataRows
+                            .Select(r => r.Cell(3).GetString()?.Trim())
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .ToList();
+
                         var existingInventoryNumbers = await _context.Properties
                             .Where(p => inventoryNumbersInFile.Contains(p.InventoryNumber))
                             .Select(p => p.InventoryNumber)
                             .ToListAsync();
 
+                        var propertiesToAdd = new List<Property>();
+
                         using (var transaction = await _context.Database.BeginTransactionAsync())
                         {
                             try
                             {
-                                foreach (var row in rows)
+                                foreach (var row in dataRows)
                                 {
+                                    var rowNumber = row.RowNumber();
+
                                     try
                                     {
-                                        var rowNumber = row.RowNumber();
+                                        var name = row.Cell(1).GetString()?.Trim() ?? "";
+                                        var inventoryNumber = row.Cell(3).GetString()?.Trim() ?? "";
 
-                                        var validationResult = ValidatePropertyRow(row, rowNumber);
-                                        if (!validationResult.isValid)
+                                        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(inventoryNumber))
                                         {
-                                            errors.AddRange(validationResult.errors);
+                                            errors.Add($"Строка {rowNumber}: Отсутствует название или инвентарный номер");
                                             continue;
                                         }
-
-                                        var inventoryNumber = row.Cell(3).Value.ToString().Trim();
 
                                         if (existingInventoryNumbers.Contains(inventoryNumber) ||
                                             propertiesToAdd.Any(p => p.InventoryNumber == inventoryNumber))
                                         {
-                                            var errorMsg = $"Строка {rowNumber}: Имущество с инвентарным номером {inventoryNumber} уже существует";
-                                            errors.Add(errorMsg);
+                                            errors.Add($"Строка {rowNumber}: Инвентарный номер '{inventoryNumber}' уже существует");
                                             continue;
                                         }
 
                                         var property = CreatePropertyFromRow(row, propertyTypes, locations, users);
-
-                                        if (property.PropertyTypeId == 0)
-                                        {
-                                            var propertyTypeName = row.Cell(4).Value.ToString();
-                                            var errorMsg = $"Строка {rowNumber}: Тип имущества '{propertyTypeName}' не найден";
-                                            errors.Add(errorMsg);
-                                            continue;
-                                        }
-
-                                        if (property.LocationId == 0)
-                                        {
-                                            var locationName = row.Cell(5).Value.ToString();
-                                            var errorMsg = $"Строка {rowNumber}: Размещение '{locationName}' не найдено";
-                                            errors.Add(errorMsg);
-                                            continue;
-                                        }
-
                                         propertiesToAdd.Add(property);
 
                                         if (propertiesToAdd.Count >= 100)
@@ -840,41 +907,77 @@ namespace uchet.Controllers
                                     }
                                     catch (Exception ex)
                                     {
-                                        var errorMsg = $"Строка {row.RowNumber()}: Ошибка импорта - {ex.Message}";
-                                        errors.Add(errorMsg);
+                                        Console.WriteLine($">>> Ошибка в строке {row.RowNumber()}: {ex.Message}");
+                                        errors.Add($"Строка {row.RowNumber()}: {ex.Message}");
                                     }
                                 }
 
                                 if (propertiesToAdd.Any())
                                 {
+                                    // 🔍 Проверим, что все PropertyTypeId > 0
+                                    var invalidTypeId = propertiesToAdd.FirstOrDefault(p => p.PropertyTypeId == 0);
+                                    if (invalidTypeId != null)
+                                    {
+                                        throw new InvalidOperationException(
+                                            $"Найдено имущество с PropertyTypeId = 0. Название: {invalidTypeId.Name}, Инвентарный: {invalidTypeId.InventoryNumber}");
+                                    }
+
+                                    // ✅ Обнуляем навигационные свойства (на всякий случай)
+                                    foreach (var property in propertiesToAdd)
+                                    {
+                                        property.PropertyType = null;
+                                        property.Location = null;
+                                        property.AssignedUser = null;
+                                    }
+
+                                    // 🧪 Перед сохранением — посмотрим первые 3
+                                    Console.WriteLine(">>> Перед сохранением:");
+                                    foreach (var p in propertiesToAdd.Take(3))
+                                    {
+                                        Console.WriteLine($">>>   '{p.Name}', TypeId={p.PropertyTypeId}, LocId={p.LocationId}, Inv={p.InventoryNumber}");
+                                    }
+
                                     _context.Properties.AddRange(propertiesToAdd);
-                                    await _context.SaveChangesAsync();
+                                    await _context.SaveChangesAsync(); // 🔥 Ошибка будет здесь
                                     importedCount += propertiesToAdd.Count;
                                 }
 
+
                                 await transaction.CommitAsync();
 
-                                var message = $"Успешно импортировано {importedCount} записей.";
+                                var message = $"Импорт завершён: {importedCount} записей добавлено.";
                                 if (errors.Any())
                                 {
                                     message += $" Ошибок: {errors.Count}.";
                                     TempData["ImportErrors"] = errors.Take(50).ToList();
                                 }
-
                                 TempData["Message"] = message;
                             }
                             catch (Exception ex)
                             {
+                                Console.WriteLine($">>> Ошибка при сохранении: {ex.Message}");
+                                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+
+                                if (ex.InnerException != null)
+                                {
+                                    Console.WriteLine($">>> Внутренняя ошибка (InnerException): {ex.InnerException.Message}");
+                                    Console.WriteLine($"Inner StackTrace: {ex.InnerException.StackTrace}");
+                                }
+
                                 await transaction.RollbackAsync();
-                                ModelState.AddModelError("", "Ошибка при сохранении данных: " + ex.Message);
+                                ModelState.AddModelError("", "Ошибка при сохранении: " + ex.Message + 
+                                    (ex.InnerException != null ? " | Детали: " + ex.InnerException.Message : ""));
                                 return View();
                             }
+
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($">>> Критическая ошибка при импорте: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 ModelState.AddModelError("", "Ошибка при обработке файла: " + ex.Message);
                 return View();
             }
@@ -882,6 +985,7 @@ namespace uchet.Controllers
             return RedirectToAction("Index");
         }
 
+//----------------
         private (bool isValid, List<string> errors) ValidatePropertyRow(IXLRow row, int rowNumber)
         {
             var errors = new List<string>();
@@ -904,65 +1008,138 @@ namespace uchet.Controllers
             return (isValid: errors.Count == 0, errors: errors);
         }
 
-        private Property CreatePropertyFromRow(IXLRow row,
+
+        private Property CreatePropertyFromRow(
+            IXLRow row,
             Dictionary<string, int> propertyTypes,
             Dictionary<string, int> locations,
             Dictionary<string, int> users)
         {
-            var name = row.Cell(1).Value.ToString();
-            var description = row.Cell(2).Value.ToString();
-            var inventoryNumber = row.Cell(3).Value.ToString();
-            var propertyTypeName = row.Cell(4).Value.ToString();
-            var locationName = row.Cell(5).Value.ToString();
-            var assignedUserName = row.Cell(6).Value.ToString();
+            // Используем GetValue<string>() — безопасный способ получения строки
+            var name = row.Cell(1).GetValue<string>()?.Trim() ?? "";
+            var description = row.Cell(2).GetValue<string>()?.Trim() ?? "";
+            var inventoryNumber = row.Cell(3).GetValue<string>()?.Trim() ?? "";
+            var propertyTypeName = row.Cell(4).GetValue<string>()?.Trim() ?? "";
+            
+            Console.WriteLine($">>> [DEBUG] Тип имущества из Excel: '{propertyTypeName}' (длина: {propertyTypeName.Length})");
+            
+            var locationName = row.Cell(5).GetValue<string>()?.Trim() ?? "";
+            var assignedUserName = row.Cell(6).GetValue<string>()?.Trim() ?? "";
+            var balanceDateStr = row.Cell(7).GetValue<string>()?.Trim();
+            var usagePeriodStr = row.Cell(8).GetValue<string>()?.Trim();
+            var costStr = row.Cell(9).GetValue<string>()?.Trim();
+            var lastMaintenanceDateStr = row.Cell(10).GetValue<string>()?.Trim();
+            var expiryDateStr = row.Cell(11).GetValue<string>()?.Trim();
 
-            propertyTypes.TryGetValue(propertyTypeName, out var propertyTypeId);
-            locations.TryGetValue(locationName, out var locationId);
-            users.TryGetValue(assignedUserName, out var assignedUserId);
+            Console.WriteLine($">>> [DEBUG] Чтение строки: Название='{name}', Тип='{propertyTypeName}', Инвентарный='{inventoryNumber}'");
+            
+            // Проверка обязательных полей
+            if (string.IsNullOrWhiteSpace(name))
+                throw new InvalidOperationException("Название имущества обязательно");
 
-            DateTime? balanceDate = null;
-            var balanceDateStr = row.Cell(7).Value.ToString();
-            if (!string.IsNullOrWhiteSpace(balanceDateStr) && DateTime.TryParse(balanceDateStr, out var bd))
+            if (string.IsNullOrWhiteSpace(inventoryNumber))
+                throw new InvalidOperationException("Инвентарный номер обязателен");
+
+            // 🔴 Проверка: если тип имущества не указан
+            if (string.IsNullOrWhiteSpace(propertyTypeName))
             {
-                balanceDate = bd.ToUniversalTime();
+                throw new InvalidOperationException(
+                    $"Тип имущества не указан. Название: '{name}', Инвентарный: '{inventoryNumber}'");
             }
 
-            int? usagePeriod = null;
-            var usagePeriodStr = row.Cell(8).Value.ToString();
-            if (!string.IsNullOrWhiteSpace(usagePeriodStr) && int.TryParse(usagePeriodStr, out var up))
+            // --- Парсинг дат ---
+            DateTime? balanceDate = null;
+            if (!string.IsNullOrWhiteSpace(balanceDateStr))
             {
+                if (!DateTime.TryParse(balanceDateStr, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var parsed))
+                {
+                    throw new InvalidOperationException($"Невозможно распознать дату баланса: '{balanceDateStr}'");
+                }
+                balanceDate = parsed.ToUniversalTime();
+            }
+
+            DateTime? lastMaintenanceDate = null;
+            if (!string.IsNullOrWhiteSpace(lastMaintenanceDateStr))
+            {
+                if (!DateTime.TryParse(lastMaintenanceDateStr, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var parsed))
+                {
+                    throw new InvalidOperationException($"Невозможно распознать дату обслуживания: '{lastMaintenanceDateStr}'");
+                }
+                lastMaintenanceDate = parsed.ToUniversalTime();
+            }
+
+            DateTime? expiryDate = null;
+            if (!string.IsNullOrWhiteSpace(expiryDateStr))
+            {
+                if (!DateTime.TryParse(expiryDateStr, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var parsed))
+                {
+                    throw new InvalidOperationException($"Невозможно распознать срок годности: '{expiryDateStr}'");
+                }
+                expiryDate = parsed.ToUniversalTime();
+            }
+
+            // --- Парсинг чисел ---
+            int? usagePeriod = null;
+            if (!string.IsNullOrWhiteSpace(usagePeriodStr))
+            {
+                if (!int.TryParse(usagePeriodStr, out var up))
+                {
+                    throw new InvalidOperationException($"Невозможно распознать срок использования: '{usagePeriodStr}'");
+                }
                 usagePeriod = up;
             }
 
             decimal? cost = null;
-            var costStr = row.Cell(9).Value.ToString();
-            if (!string.IsNullOrWhiteSpace(costStr) && decimal.TryParse(costStr, out var c))
+            if (!string.IsNullOrWhiteSpace(costStr))
             {
+                if (!decimal.TryParse(costStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out var c))
+                {
+                    throw new InvalidOperationException($"Невозможно распознать стоимость: '{costStr}'");
+                }
                 cost = c;
             }
 
-            DateTime? lastMaintenanceDate = null;
-            var lastMaintenanceDateStr = row.Cell(10).Value.ToString();
-            if (!string.IsNullOrWhiteSpace(lastMaintenanceDateStr) && DateTime.TryParse(lastMaintenanceDateStr, out var lmd))
+            // --- Проверка справочников ---
+            Console.WriteLine($">>> Ищем в propertyTypes: ключи = [{string.Join(", ", propertyTypes.Keys)}]");
+
+            if (!propertyTypes.TryGetValue(propertyTypeName, out var propertyTypeId))
             {
-                lastMaintenanceDate = lmd.ToUniversalTime();
+                throw new InvalidOperationException($"Тип имущества '{propertyTypeName}' не найден в справочнике");
             }
 
-            DateTime? expiryDate = null;
-            var expiryDateStr = row.Cell(11).Value.ToString();
-            if (!string.IsNullOrWhiteSpace(expiryDateStr) && DateTime.TryParse(expiryDateStr, out var ed))
+            if (!locations.TryGetValue(locationName, out var locationId))
             {
-                expiryDate = ed.ToUniversalTime();
+                throw new InvalidOperationException($"Размещение '{locationName}' не найдено в справочнике");
             }
 
+            int assignedUserId = 0; // Объявляем вне
+
+            if (!string.IsNullOrWhiteSpace(assignedUserName))
+            {
+                if (!users.TryGetValue(assignedUserName, out var userId))
+                {
+                    throw new InvalidOperationException($"Пользователь '{assignedUserName}' не найден в справочнике");
+                }
+                assignedUserId = userId;
+            }
+
+
+            // --- Логи для отладки ---
+            Console.WriteLine($">>> [DEBUG] PropertyTypeId: {propertyTypeId} для '{propertyTypeName}'");
+            Console.WriteLine($">>> [DEBUG] LocationId: {locationId} для '{locationName}'");
+            Console.WriteLine($">>> [DEBUG] AssignedUserId: {(string.IsNullOrWhiteSpace(assignedUserName) ? 0 : assignedUserId)} для '{assignedUserName ?? "null"}'");
+            Console.WriteLine($">>> Создание Property: Name='{name}', PropertyTypeId={propertyTypeId}");
+            // ---
+
+            // --- Создание объекта ---
             return new Property
             {
-                Name = name.Trim(),
-                Description = description?.Trim(),
-                InventoryNumber = inventoryNumber.Trim(),
+                Name = name,
+                Description = description,
+                InventoryNumber = inventoryNumber,
                 PropertyTypeId = propertyTypeId,
                 LocationId = locationId,
-                AssignedUserId = assignedUserId == 0 ? null : assignedUserId,
+                AssignedUserId = string.IsNullOrWhiteSpace(assignedUserName) ? null : (int?)assignedUserId,
                 BalanceDate = balanceDate,
                 UsagePeriod = usagePeriod,
                 Cost = cost,
@@ -971,8 +1148,9 @@ namespace uchet.Controllers
                 QRCode = GenerateQRCode(inventoryNumber),
                 Barcode = GenerateBarcode(inventoryNumber)
             };
-        }        
-        
+        }
+
+
         public async Task<IActionResult> PrintQRCodes(int? propertyTypeId, int? locationId, int? userId, int? tagId)
         {
             var properties = _context.Properties
