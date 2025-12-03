@@ -2,87 +2,99 @@
     ViewData["Title"] = "Справочники";
 }
 
-<h2>Справочники</h2>
-
-<div class="row">
-    <div class="col-md-6">
-        <h3>Локации</h3>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addLocationModal">
-            Добавить локацию
-        </button>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Описание</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var location in ViewBag.Locations)
-                {
-                    <tr>
-                        <td>@location.Name</td>
-                        <td>@location.Description</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLocationModal"
-                                    data-location-id="@location.Id" data-location-name="@location.Name" data-location-description="@location.Description">
-                                Редактировать
-                            </button>
-                            <form asp-action="DeleteLocation" method="post" class="d-inline">
-                                <input type="hidden" name="id" value="@location.Id" />
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту локацию?')">
-                                    Удалить
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+<div class="reference-container">
+    <h2 class="reference-header">Справочники</h2>
     
-    <div class="col-md-6">
-        <h3>Типы имущества</h3>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPropertyTypeModal">
-            Добавить тип имущества
-        </button>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Описание</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var propertyType in ViewBag.PropertyTypes)
-                {
-                    <tr>
-                        <td>@propertyType.Name</td>
-                        <td>@propertyType.Description</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPropertyTypeModal"
-                                    data-type-id="@propertyType.Id" data-type-name="@propertyType.Name" data-type-description="@propertyType.Description">
-                                Редактировать
-                            </button>
-                            <form asp-action="DeletePropertyType" method="post" class="d-inline">
-                                <input type="hidden" name="id" value="@propertyType.Id" />
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этот тип имущества?')">
-                                    Удалить
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="col-md-6">
-        <h3>Бирки</h3>
-        <a href="@Url.Action("Index", "Tag")" class="btn btn-primary mb-3">Управление бирками</a>
-        <p>Настройка размеров и параметров бирок для печати.</p>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="reference-section">
+                <h3>Локации</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+                    Добавить локацию
+                </button>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var location in ViewBag.Locations)
+                            {
+                                <tr>
+                                    <td>@location.Name</td>
+                                    <td>@location.Description</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLocationModal"
+                                                data-location-id="@location.Id" data-location-name="@location.Name" data-location-description="@location.Description">
+                                            Редактировать
+                                        </button>
+                                        <form asp-action="DeleteLocation" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@location.Id" />
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту локацию?')">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="reference-section">
+                <h3>Типы имущества</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPropertyTypeModal">
+                    Добавить тип имущества
+                </button>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var propertyType in ViewBag.PropertyTypes)
+                            {
+                                <tr>
+                                    <td>@propertyType.Name</td>
+                                    <td>@propertyType.Description</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPropertyTypeModal"
+                                                data-type-id="@propertyType.Id" data-type-name="@propertyType.Name" data-type-description="@propertyType.Description">
+                                            Редактировать
+                                        </button>
+                                        <form asp-action="DeletePropertyType" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@propertyType.Id" />
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этот тип имущества?')">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="reference-section">
+                <h3>Бирки</h3>
+                <a href="@Url.Action("Index", "Tag")" class="btn btn-primary mb-3">Управление бирками</a>
+                <p>Настройка размеров и параметров бирок для печати.</p>
+            </div>
+        </div>
     </div>
 </div>
 

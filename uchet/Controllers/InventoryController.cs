@@ -54,8 +54,161 @@ namespace uchet.Controllers
         public async Task<IActionResult> Create()
         {
             var locations = await _context.Locations.ToListAsync();
+            var users = await _context.Users
+                .Where(u => u.IsActive)
+                .OrderBy(u => u.Name)
+                .ToListAsync();
+            
             ViewBag.Locations = new SelectList(locations, "Id", "Name");
+            ViewBag.Users = new SelectList(users, "Id", "Name");
             return View();
+        }
+        // Создание инвентаризации по переданному имуществу пользователя - доступно Admin и Manager
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> CreateByUser()
+        {
+            var users = await _context.Users
+                .Where(u => u.IsActive) // Только активные пользователи
+                .OrderBy(u => u.Name)
+                .ToListAsync();
+            
+            ViewBag.Users = new SelectList(users, "Id", "Name");
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> CreateByUser(string name, int userId)
+        {
+            Console.WriteLine($"CreateByUser: Starting with name={name}, userId={userId} - InventoryController.cs:84");
+            
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                Console.WriteLine("CreateByUser: Name is empty or whitespace - InventoryController.cs:88");
+                ModelState.AddModelError("", "Название инвентаризации обязательно");
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.Name)
+                    .ToListAsync();
+                ViewBag.Users = new SelectList(users, "Id", "Name");
+                return View();
+            }
+
+            // Получаем имущество, переданное пользователю
+            var userProperties = await _context.Properties
+                .Include(p => p.PropertyType)
+                .Where(p => p.AssignedUserId == userId)
+                .ToListAsync();
+
+            Console.WriteLine($"CreateByUser: Found {userProperties.Count} properties for userId={userId} - InventoryController.cs:104");
+
+            if (!userProperties.Any())
+            {
+                Console.WriteLine("CreateByUser: No properties found for user - InventoryController.cs:108");
+                ModelState.AddModelError("", "У выбранного пользователя нет переданного имущества");
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.Name)
+                    .ToListAsync();
+                ViewBag.Users = new SelectList(users, "Id", "Name");
+                return View();
+            }
+
+            // Сбрасываем статус проверки для имущества пользователя
+            foreach (var property in userProperties)
+            {
+                property.IsCheckedInLastInventory = false;
+                property.LastInventoryCheckDate = null;
+            }
+
+            // Получаем пользователя с локацией
+            var userWithLocation = await _context.Users
+                .Include(u => u.Location)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            
+            Console.WriteLine($"CreateByUser: userWithLocation={userWithLocation?.Name}, locationId={userWithLocation?.LocationId} - InventoryController.cs:130");
+            
+            // Проверяем, что у пользователя есть локация
+            if (userWithLocation?.LocationId == null)
+            {
+                Console.WriteLine("CreateByUser: User has no location assigned - InventoryController.cs:135");
+                ModelState.AddModelError("", "У пользователя не указана локация");
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.Name)
+                    .ToListAsync();
+                ViewBag.Users = new SelectList(users, "Id", "Name");
+                return View();
+            }
+            
+            Console.WriteLine($"CreateByUser: User locationId={userWithLocation.LocationId} - InventoryController.cs:145");
+            
+            // Создаем инвентаризацию с привязкой к локации пользователя
+            var inventory = new Inventory
+            {
+                Name = name,
+                LocationId = userWithLocation.LocationId.Value, // Преобразуем int? в int через Value
+                TotalItems = userProperties.Count,
+                CheckedItems = 0,
+                StartDate = DateTime.UtcNow
+            };
+            
+            Console.WriteLine($"CreateByUser: Creating inventory with name={name}, locationId={inventory.LocationId}, totalItems={inventory.TotalItems} - InventoryController.cs:157");
+
+            _context.Inventories.Add(inventory);
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"CreateByUser: Inventory created with id={inventory.Id} - InventoryController.cs:164");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"CreateByUser: Exception occurred while saving inventory: {ex.Message} - InventoryController.cs:168");
+                ModelState.AddModelError("", "Ошибка при создании инвентаризации");
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.Name)
+                    .ToListAsync();
+                ViewBag.Users = new SelectList(users, "Id", "Name");
+                return View();
+            }
+            
+            // Создаем записи InventoryItem для каждого имущества пользователя
+            foreach (var property in userProperties)
+            {
+                var inventoryItem = new InventoryItem
+                {
+                    InventoryId = inventory.Id,
+                    PropertyId = property.Id,
+                    IsChecked = false
+                };
+                _context.InventoryItems.Add(inventoryItem);
+            }
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"CreateByUser: Saved {userProperties.Count} inventory items for inventoryId={inventory.Id} - InventoryController.cs:193");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"CreateByUser: Exception occurred while saving inventory items: {ex.Message} - InventoryController.cs:197");
+                // Удаляем инвентаризацию, если не удалось создать элементы
+                _context.Inventories.Remove(inventory);
+                await _context.SaveChangesAsync();
+                ModelState.AddModelError("", "Ошибка при создании элементов инвентаризации");
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.Name)
+                    .ToListAsync();
+                ViewBag.Users = new SelectList(users, "Id", "Name");
+                return View();
+            }
+
+            Console.WriteLine($"CreateByUser: Redirecting to Details page for inventoryId={inventory.Id} - InventoryController.cs:210");
+            return RedirectToAction("Details", new { id = inventory.Id });
         }
 
         [HttpPost]
@@ -91,11 +244,11 @@ namespace uchet.Controllers
             try
             {
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"Create: inventory created with id={inventory.Id} - InventoryController.cs:94");
+                Console.WriteLine($"Create: inventory created with id={inventory.Id} - InventoryController.cs:247");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Create: exception occurred while saving inventory: {ex.Message} - InventoryController.cs:98");
+                Console.WriteLine($"Create: exception occurred while saving inventory: {ex.Message} - InventoryController.cs:251");
                 ModelState.AddModelError("", "Ошибка при создании инвентаризации");
                 var locations = await _context.Locations.ToListAsync();
                 ViewBag.Locations = new SelectList(locations, "Id", "Name");
@@ -107,7 +260,7 @@ namespace uchet.Controllers
                 .Where(p => p.LocationId == locationId)
                 .ToListAsync();
                 
-            Console.WriteLine($"Create: found {properties.Count} properties for locationId={locationId} - InventoryController.cs:110");
+            Console.WriteLine($"Create: found {properties.Count} properties for locationId={locationId} - InventoryController.cs:263");
 
             foreach (var property in properties)
             {
@@ -123,11 +276,11 @@ namespace uchet.Controllers
             try
             {
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"Create: saved {properties.Count} inventory items for inventoryId={inventory.Id} - InventoryController.cs:126");
+                Console.WriteLine($"Create: saved {properties.Count} inventory items for inventoryId={inventory.Id} - InventoryController.cs:279");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Create: exception occurred while saving inventory items: {ex.Message} - InventoryController.cs:130");
+                Console.WriteLine($"Create: exception occurred while saving inventory items: {ex.Message} - InventoryController.cs:283");
                 // Удаляем инвентаризацию, если не удалось создать элементы
                 _context.Inventories.Remove(inventory);
                 await _context.SaveChangesAsync();
@@ -224,13 +377,13 @@ namespace uchet.Controllers
                     .OrderBy(p => p.name)
                     .ToList();
 
-                Console.WriteLine($"GetLocationProperties: возвращено {properties.Count} свойств - InventoryController.cs:227");
+                Console.WriteLine($"GetLocationProperties: возвращено {properties.Count} свойств - InventoryController.cs:380");
 
                 return Json(new { success = true, properties });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"GetLocationProperties ошибка: {ex.Message} - InventoryController.cs:233");
+                Console.WriteLine($"GetLocationProperties ошибка: {ex.Message} - InventoryController.cs:386");
                 return Json(new { success = false, message = $"Ошибка: {ex.Message}" });
             }
         }
@@ -241,19 +394,19 @@ namespace uchet.Controllers
         public async Task<IActionResult> CheckItem(int inventoryId, string code)
         {
             // Добавляем логирование для диагностики
-            Console.WriteLine($"CheckItem: inventoryId={inventoryId}, code={code} - InventoryController.cs:244");
+            Console.WriteLine($"CheckItem: inventoryId={inventoryId}, code={code} - InventoryController.cs:397");
              
             var inventory = await _context.Inventories
                 .Include(i => i.InventoryItems)
                 .ThenInclude(ii => ii.Property)
                 .FirstOrDefaultAsync(i => i.Id == inventoryId);
              
-            Console.WriteLine($"CheckItem: inventory found={inventory != null} - InventoryController.cs:251");
+            Console.WriteLine($"CheckItem: inventory found={inventory != null} - InventoryController.cs:404");
              
             if (inventory != null)
             {
-                Console.WriteLine($"CheckItem: inventory completed={inventory.IsCompleted} - InventoryController.cs:255");
-                Console.WriteLine($"CheckItem: inventory locationId={inventory.LocationId} - InventoryController.cs:256");
+                Console.WriteLine($"CheckItem: inventory completed={inventory.IsCompleted} - InventoryController.cs:408");
+                Console.WriteLine($"CheckItem: inventory locationId={inventory.LocationId} - InventoryController.cs:409");
             }
  
             if (inventory == null)
@@ -267,17 +420,17 @@ namespace uchet.Controllers
             }
             
             // Добавляем логирование для диагностики поиска имущества
-            Console.WriteLine($"CheckItem: searching property with QRCode={code} or InventoryNumber={code} - InventoryController.cs:270");
+            Console.WriteLine($"CheckItem: searching property with QRCode={code} or InventoryNumber={code} - InventoryController.cs:423");
              
             // Ищем имущество по QR коду или инвентарному номеру
             var property = await _context.Properties
                 .FirstOrDefaultAsync(p => p.QRCode == code || p.InventoryNumber == code);
                  
-            Console.WriteLine($"CheckItem: property found={property != null} - InventoryController.cs:276");
+            Console.WriteLine($"CheckItem: property found={property != null} - InventoryController.cs:429");
              
             if (property != null)
             {
-                Console.WriteLine($"CheckItem: property locationId={property.LocationId}, property id={property.Id} - InventoryController.cs:280");
+                Console.WriteLine($"CheckItem: property locationId={property.LocationId}, property id={property.Id} - InventoryController.cs:433");
             }
  
             if (property == null)
@@ -448,7 +601,7 @@ namespace uchet.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при удалении завершенных инвентаризаций: {ex.Message} - InventoryController.cs:451");
+                Console.WriteLine($"Ошибка при удалении завершенных инвентаризаций: {ex.Message} - InventoryController.cs:604");
                 TempData["Error"] = $"Ошибка при удалении завершенных инвентаризаций: {ex.Message}";
             }
 

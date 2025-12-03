@@ -1,3 +1,7 @@
 /.vscode
 /bin
 /publish
+/uchet/appsettings.json
+/uchet/bin
+/uchet/obj
+/uchet/publish

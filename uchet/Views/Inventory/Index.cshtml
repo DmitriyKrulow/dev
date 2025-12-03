@@ -182,13 +182,13 @@
                                 <i class="fas fa-qrcode"></i>
                             </a>
                             
-                            <!-- Завершение инвентаризации доступно Admin и Manager -->
-                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            <!-- Завершение инвентаризации доступно только Admin -->
+                            @if (User.IsInRole("Admin"))
                             {
                                 <form asp-action="Complete" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-warning" title="Завершить инвентаризацию" 
+                                    <button type="submit" class="btn btn-warning" title="Завершить инвентаризацию"
                                             onclick="return confirm('Завершить инвентаризацию? Непроверенное имущество будет отмечено как отсутствующее.')">
                                         <i class="fas fa-flag-checkered"></i>
                                     </button>
